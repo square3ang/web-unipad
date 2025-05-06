@@ -1,10 +1,9 @@
 "use client";
-import Image from "next/image";
 import Pitch from "./pitch";
-import { createRef, Dispatch, Ref, RefObject, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import JSZip from "jszip";
 import { Input, Output, WebMidi } from "webmidi";
-import { Howl, Howler } from "howler";
+import { Howl } from "howler";
 import { v4 as uuid } from "uuid";
 
 const notes = [
@@ -71,34 +70,32 @@ const two = [
   [11, -80, 60],
   [11, -80, 70],
   [11, -80, 80]
-]
+];
 
-
-const circleCodes: { [key: string]: any } = {
+const circleCodes: { [key: string]: number[][] } = {
   mk2: one,
   pro: two,
   promk3: two,
   x: two
-}
+};
 
-const deviceCode: { [key: string]: any } = {
+const deviceCode: { [key: string]: number } = {
   mk2: 24,
   pro: 16,
   promk3: 14,
   x: 12
-}
-
+};
 
 type Session = { keySoundsNum: { [x: number]: { [y: number]: number } }, ledNum: { [x: number]: { [y: number]: number } } };
 
 type KeyLED = { [chain: number]: { [x: number]: { [y: number]: { acts: { type: string, args: string[] }[], repeat: number }[] } } };
 
 function RGBtoHSV(r: number, g: number, b: number) {
-  var max = Math.max(r, g, b), min = Math.min(r, g, b),
+  const max = Math.max(r, g, b), min = Math.min(r, g, b),
     d = max - min,
-    h,
     s = (max === 0 ? 0 : d / max),
     v = max / 255;
+  let h = 0;
 
   switch (max) {
     case min: h = 0; break;
@@ -115,7 +112,7 @@ function RGBtoHSV(r: number, g: number, b: number) {
 }
 
 function HSVtoRGB(h: number, s: number, v: number) {
-  var r, g, b, i, f, p, q, t;
+  let r, g, b, i, f, p, q, t;
   i = Math.floor(h * 6);
   f = h * 6 - i;
   p = v * (1 - s);
@@ -140,9 +137,8 @@ export default function Home() {
   const [midiInputs, setMidiInputs] = useState<Input[]>([]);
   const [midiOutputs, setMidiOutputs] = useState<Output[]>([]);
 
-
   const gridRef = useRef<([string, Dispatch<SetStateAction<string>>])[]>(Array(8 * 9).fill(null));
-  const [pallete, setPallete] = useState<any>({});
+  const [pallete, setPallete] = useState<{ [key: string]: string }>({});
 
   const midiInput = useRef<Input | null>(null);
   const midiOutput = useRef<Output | null>(null);
@@ -171,24 +167,24 @@ export default function Home() {
   async function playAuto() {
     await new Promise(resolve => setTimeout(resolve, 500));
     let delayOffset = 0;
-    for (let l of autoPlay.current.split(/\r\n|\r|\n/)) {
+    for (const l of autoPlay.current.split(/\r\n|\r|\n/)) {
       if (!autoPlaying.current) {
         break;
       }
-      let line = l.trim();
-      let spl = line.split(" ");
-      if (spl[0] == "chain" || spl[0] == "c") {
+      const line = l.trim();
+      const spl = line.split(" ");
+      if (spl[0] === "chain" || spl[0] === "c") {
         press(9, Number(spl[1]));
       }
-      else if (spl[0] == "on" || spl[0] == "o") {
+      else if (spl[0] === "on" || spl[0] === "o") {
         press(Number(spl[2]), Number(spl[1]));
       }
-      else if (spl[0] == "touch" || spl[0] == "t") {
+      else if (spl[0] === "touch" || spl[0] === "t") {
         press(Number(spl[2]), Number(spl[1]));
       }
-      else if (spl[0] == "delay" || spl[0] == "d") {
-        let delay = Number(spl[1]);
-        let curtime = new Date().getTime();
+      else if (spl[0] === "delay" || spl[0] === "d") {
+        const delay = Number(spl[1]);
+        const curtime = new Date().getTime();
         await new Promise(resolve => setTimeout(resolve, Math.max(0, delay - delayOffset)));
         delayOffset = new Date().getTime() - (curtime + delay - delayOffset);
       }
@@ -196,7 +192,7 @@ export default function Home() {
   }
 
   function setMiscLED(code: number, velo: number) {
-    if (modelType.current == "mk2" || modelType.current == "pro") {
+    if (modelType.current === "mk2" || modelType.current === "pro") {
       // legacy
       midiOutput.current?.send(new Uint8Array([
         240,
@@ -222,18 +218,17 @@ export default function Home() {
   }
 
   function setCircleLED(x: number, y: number, velo: number) {
-    let code = circleCodes[modelType.current][XYtoCircle(x, y) - 1];
+    const code = circleCodes[modelType.current][XYtoCircle(x, y) - 1];
     if (code != undefined && midiOutput) {
       setMiscLED(code[2], velo);
     }
     gridRef.current[y * 10 + x][1](pallete[velo]);
-
   }
 
-  let beforeChain = useRef(0);
+  const beforeChain = useRef(0);
   function updateChainLED(off: boolean = false) {
     if (!showChain.current && !off) return;
-    if (beforeChain.current != chainRef.current && beforeChain.current != 0)
+    if (beforeChain.current !== chainRef.current && beforeChain.current !== 0)
       setCircleLED(9, beforeChain.current, 0);
     setCircleLED(9, chainRef.current, off ? 0 : 3);
     beforeChain.current = chainRef.current;
@@ -249,25 +244,25 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      var palleteReq = await fetch("/pallete.txt");
-      var txt = await palleteReq.text();
-      var arr = txt.split("\n");
-      let pal: any = {};
-      for (let val of arr) {
-        let spl = val.split(",");
+      const palleteReq = await fetch("/pallete.txt");
+      const txt = await palleteReq.text();
+      const arr = txt.split("\n");
+      const pal: { [key: string]: string } = {};
+      for (const val of arr) {
+        const spl = val.split(",");
         if (spl.length < 2) continue;
-        let velo = spl[0].trim();
-        let color = spl[1].trim();
+        const velo = spl[0].trim();
+        const color = spl[1].trim();
 
         let col = color.replaceAll(" ", ",").replace(";", "");
-        let colspl = col.split(",");
-        let hsv = RGBtoHSV(Number(colspl[0]) * 4, Number(colspl[1]) * 4, Number(colspl[2]) * 4);
-        let h = hsv.h!;
-        let s = hsv.s!;
+        const colspl = col.split(",");
+        const hsv = RGBtoHSV(Number(colspl[0]) * 4, Number(colspl[1]) * 4, Number(colspl[2]) * 4);
+        const h = hsv.h!;
+        const s = hsv.s!;
         let v = hsv.v!;
         v = v * 0.4 + 0.6;
-        s *= 0.7;
-        let rgb = HSVtoRGB(h, s, v);
+        const adjustedS = s * 0.7;
+        const rgb = HSVtoRGB(h, adjustedS, v);
         col = `${rgb.r},${rgb.g},${rgb.b}`;
 
         pal[velo] = col;
@@ -275,31 +270,29 @@ export default function Home() {
       setPallete(pal);
     })();
     (async () => {
-      const webmidi = await WebMidi.enable({ sysex: true });
+      await WebMidi.enable({ sysex: true });
       setMidiInputs(WebMidi.inputs);
       setMidiOutputs(WebMidi.outputs);
     })();
-  }, []);
+  }, [clearLED]);
 
   function playSnd(x: number, y: number) {
-
-    let b = keySounds.current[chainRef.current];
+    const b = keySounds.current[chainRef.current];
     if (b == undefined) return;
     if (b[x] == undefined) return;
     if (b[x][y] == undefined) return;
-    let sound = b[x][y];
+    const sound = b[x][y];
     if (session.current.keySoundsNum[x] == undefined) {
       session.current.keySoundsNum[x] = {};
     }
     if (session.current.keySoundsNum[x][y] == undefined) {
       session.current.keySoundsNum[x][y] = 0;
     }
-    let snd = session.current.keySoundsNum[x][y];
+    const snd = session.current.keySoundsNum[x][y];
     if (sound[snd].name == undefined) return;
 
-
-    if (sound[snd].repeat != 1) {
-      if (sound[snd].repeat == 0) {
+    if (sound[snd].repeat !== 1) {
+      if (sound[snd].repeat === 0) {
         return; // not implemented
       }
       let cnt = 0;
@@ -318,7 +311,7 @@ export default function Home() {
     if (session.current.keySoundsNum[x][y] >= sound.length) {
       session.current.keySoundsNum[x][y] = 0;
     }
-    if (sound[snd].chainNum != -1) {
+    if (sound[snd].chainNum !== -1) {
       press(9, sound[snd].chainNum);
     }
   }
@@ -347,40 +340,40 @@ export default function Home() {
 
   function XYtoCircle(x: number, y: number) {
     let code = 0;
-    if (y == 0) {
+    if (y === 0) {
       code = x;
     }
-    else if (x == 9) {
+    else if (x === 9) {
       code = y + 8;
     }
-    else if (y == 9) {
+    else if (y === 9) {
       code = (9 - x) + 16;
     }
-    else if (x == 0) {
+    else if (x === 0) {
       code = (9 - y) + 24;
     }
     return code;
   }
 
   async function runLED(l: { type: string, args: string[] }, sess: string) {
-    if (l.type == "on" || l.type == "o") {
+    if (l.type === "on" || l.type === "o") {
       let [y, x, color, velo] = l.args;
-      if (y == "l") {
+      if (y === "l") {
         velo = color;
         color = x;
         setMiscLED(99, Number(velo));
         gridRef.current[9][1](pallete[velo]);
       }
-      if (y == "mc" || y == "*") {
-        let circ = circleToXY(Number(x));
+      if (y === "mc" || y === "*") {
+        const circ = circleToXY(Number(x));
         x = circ[0] + "";
         y = circ[1] + "";
       }
-      let xAsNum = Number(x);
-      let yAsNum = Number(y);
-      let veloAsNum = Number(velo);
+      const xAsNum = Number(x);
+      const yAsNum = Number(y);
+      const veloAsNum = Number(velo);
 
-      if (xAsNum == 0 || yAsNum == 0 || xAsNum == 9 || yAsNum == 9) {
+      if (xAsNum === 0 || yAsNum === 0 || xAsNum === 9 || yAsNum === 9) {
         setCircleLED(xAsNum, yAsNum, veloAsNum);
         if (LEDEnabled.current[xAsNum] == undefined) {
           LEDEnabled.current[xAsNum] = {};
@@ -394,7 +387,7 @@ export default function Home() {
 
       if (midiOutput) {
         try {
-          let note = notes[yAsNum][xAsNum - 1];
+          const note = notes[yAsNum][xAsNum - 1];
 
           if (note != undefined)
             midiOutput.current?.sendNoteOn(note, { rawAttack: veloAsNum, channels: 1 });
@@ -413,15 +406,15 @@ export default function Home() {
       }
       catch { }
     }
-    else if (l.type == "off" || l.type == "f") {
+    else if (l.type === "off" || l.type === "f") {
       let [y, x] = l.args;
-      if (y == "mc" || y == "*") {
-        let circ = circleToXY(Number(x));
+      if (y === "mc" || y === "*") {
+        const circ = circleToXY(Number(x));
         x = circ[0] + "";
         y = circ[1] + "";
       }
-      let xAsNum = Number(x);
-      let yAsNum = Number(y);
+      const xAsNum = Number(x);
+      const yAsNum = Number(y);
       if (LEDEnabled.current[xAsNum] == undefined) {
         LEDEnabled.current[xAsNum] = {};
       }
@@ -429,9 +422,9 @@ export default function Home() {
         LEDEnabled.current[xAsNum][yAsNum] = "unknown";
       }
 
-      if (LEDEnabled.current[xAsNum][yAsNum] != sess) return;
+      if (LEDEnabled.current[xAsNum][yAsNum] !== sess) return;
 
-      if (xAsNum == 0 || yAsNum == 0 || xAsNum == 9 || yAsNum == 9) {
+      if (xAsNum === 0 || yAsNum === 0 || xAsNum === 9 || yAsNum === 9) {
         setCircleLED(xAsNum, yAsNum, 0);
         LEDEnabled.current[xAsNum][yAsNum] = "unknown";
         return;
@@ -439,8 +432,7 @@ export default function Home() {
 
       if (midiOutput) {
         try {
-
-          let note = notes[yAsNum][xAsNum - 1];
+          const note = notes[yAsNum][xAsNum - 1];
           if (note != undefined)
             midiOutput.current?.sendNoteOn(note, { rawAttack: 0, channels: 1 });
         }
@@ -455,41 +447,40 @@ export default function Home() {
       catch (err) {
         console.error(err);
       }
-
     }
   }
 
   async function playLED(x: number, y: number) {
     stopled.current = false;
-    let c = keyLEDs.current[chainRef.current];
+    const c = keyLEDs.current[chainRef.current];
     if (c == undefined) return;
     if (c[x] == undefined) return;
     if (c[x][y] == undefined) return;
-    let led = c[x][y];
+    const led = c[x][y];
     if (session.current.ledNum[x] == undefined) {
       session.current.ledNum[x] = {};
     }
     if (session.current.ledNum[x][y] == undefined) {
       session.current.ledNum[x][y] = 0;
     }
-    let ledNum = session.current.ledNum[x][y];
-    let l = led[ledNum];
+    const ledNum = session.current.ledNum[x][y];
+    const l = led[ledNum];
     session.current.ledNum[x][y]++;
     if (session.current.ledNum[x][y] >= led.length) {
       session.current.ledNum[x][y] = 0;
     }
     if (l == undefined) return;
     let delayOffset = 0;
-    let sess = uuid();
+    const sess = uuid();
 
     for (let asdf = 0; asdf < l.repeat; asdf++) {
       for (let i = 0; i < l.acts.length; i++) {
         if (stopled.current) return;
-        let l2 = l.acts[i];
+        const l2 = l.acts[i];
 
-        if (l2.type == "delay" || l2.type == "d") {
-          let delay = Number(l2.args[0]);
-          let curtime = new Date().getTime();
+        if (l2.type === "delay" || l2.type === "d") {
+          const delay = Number(l2.args[0]);
+          const curtime = new Date().getTime();
           await new Promise(resolve => setTimeout(resolve, Math.max(0, delay - delayOffset)));
           delayOffset = new Date().getTime() - (curtime + delay - delayOffset);
           continue;
@@ -499,11 +490,10 @@ export default function Home() {
         updateChainLED();
       }
     }
-
   }
 
   function press(x: number, y: number) {
-    if (x == 9) {
+    if (x === 9) {
       setChain(y);
       session.current = { keySoundsNum: {}, ledNum: {} };
       chainRef.current = y;
@@ -521,16 +511,16 @@ export default function Home() {
         LEDEnabled.current = {};
         gridRef.current[i * 10 + j][1](pallete[0]);
 
-        let x = j;
-        let y = i;
+        const x = j;
+        const y = i;
 
-        if (x == 0 || y == 0 || x == 9 || y == 9) {
+        if (x === 0 || y === 0 || x === 9 || y === 9) {
           setCircleLED(x, y, 0);
           continue;
         }
 
         if (midiOutput) {
-          let note = notes[y][x - 1];
+          const note = notes[y][x - 1];
           if (note != undefined)
             midiOutput.current?.sendNoteOn(note, { rawAttack: 0, channels: 1 });
         }
@@ -542,10 +532,10 @@ export default function Home() {
   const grid = Array(10 * 10).fill(0);
 
   for (let idx = 0; idx < grid.length; idx++) {
-    let y = Math.floor(idx / 10);
-    let x = idx % 10;
+    const y = Math.floor(idx / 10);
+    const x = idx % 10;
 
-    let state = useState("0,0,0");
+    const state = useState("0,0,0");
     gridRef.current[y * 10 + x] = state;
   }
 
@@ -553,14 +543,14 @@ export default function Home() {
     <header className="p-5 bg-gray-700 text-white text-3xl flex justify-between items-center">
       <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
       <div>
-        <button onClick={async a => {
+        <button onClick={async () => {
           session.current = { keySoundsNum: {}, ledNum: {} };
           LEDEnabled.current = {};
           setChain(1);
           clearLED();
-          let newsounds: { [key: string]: Howl } = {};
-          let newkeySounds: { [chain: number]: { [x: number]: { [y: number]: { name: string, repeat: number, chainNum: number }[] } } } = {};
-          let newkeyLEDs: KeyLED = {};
+          const newsounds: { [key: string]: Howl } = {};
+          const newkeySounds: { [chain: number]: { [x: number]: { [y: number]: { name: string, repeat: number, chainNum: number }[] } } } = {};
+          const newkeyLEDs: KeyLED = {};
           const [fileHandle] = await (window as any).showOpenFilePicker({
             types: [
               {
@@ -577,13 +567,13 @@ export default function Home() {
           const file = await fileHandle.getFile();
           const fileData = await file.arrayBuffer();
           const zip = await JSZip.loadAsync(fileData);
-          for (let dat of Object.values(zip.files)) {
+          for (const dat of Object.values(zip.files)) {
             if (dat.dir) continue;
             if (dat.name.toLowerCase().startsWith("sounds/")) {
               const spl = dat.name.split("/");
               const name = spl[spl.length - 1].trim();
               const fileData = await (dat as JSZip.JSZipObject).async("arraybuffer");
-              var arrayBufferView = new Uint8Array(fileData);
+              const arrayBufferView = new Uint8Array(fileData);
               let type = "";
               if (name.endsWith(".wav")) {
                 type = "audio/wav";
@@ -600,7 +590,7 @@ export default function Home() {
               } else if (name.endsWith(".opus")) {
                 type = "audio/opus";
               }
-              var blob = new Blob([arrayBufferView], { type: type });
+              const blob = new Blob([arrayBufferView], { type: type });
               const url = URL.createObjectURL(blob);
               const sound = new Howl({
                 src: [url],
@@ -610,19 +600,17 @@ export default function Home() {
 
               newsounds[name] = sound;
             }
-            if (dat.name.toLowerCase() == "keysound") {
-              const spl = dat.name.split("/");
-              const name = spl[spl.length - 1].trim();
+            if (dat.name.toLowerCase() === "keysound") {
               const txt = await dat.async("text");
               const lines = txt.split("\n");
-              for (let line of lines) {
-                if (line.trim() == "") continue;
-                let [chain, y, x, soundName, repeat, chainNum] = line.trim().split(" ");
-                if (repeat == undefined) repeat = "1";
-                if (chainNum == undefined) chainNum = "-1";
-                let chainAsNum = Number(chain);
-                let xAsNum = Number(x);
-                let yAsNum = Number(y);
+              for (const line of lines) {
+                if (line.trim() === "") continue;
+                const [chain, y, x, soundName, repeat, chainNum] = line.trim().split(" ");
+                const repeatValue = repeat === undefined ? "1" : repeat;
+                const chainNumValue = chainNum === undefined ? "-1" : chainNum;
+                const chainAsNum = Number(chain);
+                const xAsNum = Number(x);
+                const yAsNum = Number(y);
                 if (newkeySounds[chainAsNum] == undefined) {
                   newkeySounds[chainAsNum] = {};
                 }
@@ -632,11 +620,11 @@ export default function Home() {
                 if (newkeySounds[chainAsNum][xAsNum][yAsNum] == undefined) {
                   newkeySounds[chainAsNum][xAsNum][yAsNum] = [];
                 }
-                newkeySounds[chainAsNum][xAsNum][yAsNum].push({ name: soundName, repeat: Number(repeat), chainNum: Number(chainNum) });
+                newkeySounds[chainAsNum][xAsNum][yAsNum].push({ name: soundName, repeat: Number(repeatValue), chainNum: Number(chainNumValue) });
               }
             }
 
-            if (dat.name.toLowerCase() == "autoplay") {
+            if (dat.name.toLowerCase() === "autoplay") {
               autoPlay.current = await dat.async("text");
             }
 
@@ -645,12 +633,12 @@ export default function Home() {
               const lines = txt.split(/\r\n|\r|\n/);
               const splitted = dat.name.split("/");
               const name = splitted[splitted.length - 1].trim();
-              let [chain, y, x, repeat, multimap] = name.split(" ");
-              let chainAsNum = Number(chain);
-              let xAsNum = Number(x);
-              let yAsNum = Number(y);
+              const [chain, y, x, repeat, multimap] = name.split(" ");
+              const chainAsNum = Number(chain);
+              const xAsNum = Number(x);
+              const yAsNum = Number(y);
 
-              if (multimap == undefined) multimap = "a";
+              const multimapValue = multimap === undefined ? "a" : multimap;
 
               if (session.current.ledNum[xAsNum] == undefined) {
                 session.current.ledNum[xAsNum] = {};
@@ -670,14 +658,13 @@ export default function Home() {
               }
 
               newkeyLEDs[chainAsNum][xAsNum][yAsNum].push({ repeat: Number(repeat), acts: [] });
-              let idx = newkeyLEDs[chainAsNum][xAsNum][yAsNum].length - 1;
-              for (let line of lines) {
-                if (line.trim() == "") continue;
-                let splitted = line.trim().split(" ");
-                newkeyLEDs[chainAsNum][xAsNum][yAsNum][idx].acts.push({ type: splitted[0], args: splitted.slice(1) });
+              const idx = newkeyLEDs[chainAsNum][xAsNum][yAsNum].length - 1;
+              for (const line of lines) {
+                if (line.trim() === "") continue;
+                const splittedLine = line.trim().split(" ");
+                newkeyLEDs[chainAsNum][xAsNum][yAsNum][idx].acts.push({ type: splittedLine[0], args: splittedLine.slice(1) });
               }
             }
-
           }
 
           sounds.current = newsounds;
@@ -694,7 +681,7 @@ export default function Home() {
         <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
           Input
           <select onChange={a => {
-            if (a.target.value == "none") {
+            if (a.target.value === "none") {
               midiInput.current = null;
               return;
             }
@@ -702,7 +689,7 @@ export default function Home() {
               midiInput.current.removeListener("noteon");
               midiInput.current.removeListener("noteoff");
             }
-            const mdi = midiInputs.find(key => key.id == a.target.value) ?? null;
+            const mdi = midiInputs.find(key => key.id === a.target.value) ?? null;
             midiInput.current = mdi;
             if (mdi) {
               mdi.addListener("noteon", e => {
@@ -729,14 +716,13 @@ export default function Home() {
                   }
                 }
                 col += 1;
-
               });
             }
           }} className="bg-gray-300 text-black p-2 rounded w-56">
             <option value="none">None</option>
             {
               midiInputs ? midiInputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>
+                return <option key={index} value={key.id}>{key.name}</option>;
               }) : undefined
             }
           </select>
@@ -744,16 +730,16 @@ export default function Home() {
         <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
           Output
           <select onChange={a => {
-            if (a.target.value == "none") {
+            if (a.target.value === "none") {
               midiOutput.current = null;
               return;
             }
-            midiOutput.current = midiOutputs.find(key => key.id == a.target.value) ?? null;
+            midiOutput.current = midiOutputs.find(key => key.id === a.target.value) ?? null;
           }} className="bg-gray-300 text-black p-2 rounded w-56">
             <option value="none">None</option>
             {
               midiOutputs ? midiOutputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>
+                return <option key={index} value={key.id}>{key.name}</option>;
               }) : undefined
             }
           </select>
@@ -768,7 +754,7 @@ export default function Home() {
             <option value="x">X</option>
           </select>
         </div>
-        <button onClick={a => {
+        <button onClick={() => {
           clearLED();
         }} className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Clear LED</button>
       </div>
@@ -803,21 +789,20 @@ export default function Home() {
         <div className="grid grid-cols-10 gap-2">
           {
             grid.map((key, index) => {
-              let y = Math.floor(index / 10);
-              let x = index % 10;
-              let state = gridRef.current[y * 10 + x]
-              if (x == 0 && y == 0) return <div key={index} />
-              if (x == 0 && y == 9) return <div key={index} />
-              if (x == 9 && y == 0) return <div key={index} className="w-16 h-16 flex justify-center items-center"><div className="w-12 h-12 rounded-xl" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>
-              if (x == 9 && y == 9) return <div key={index} />
+              const y = Math.floor(index / 10);
+              const x = index % 10;
+              const state = gridRef.current[y * 10 + x];
+              if (x === 0 && y === 0) return <div key={index} />;
+              if (x === 0 && y === 9) return <div key={index} />;
+              if (x === 9 && y === 0) return <div key={index} className="w-16 h-16 flex justify-center items-center"><div className="w-12 h-12 rounded-xl" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>;
+              if (x === 9 && y === 9) return <div key={index} />;
               return <div key={index} className="w-16 h-16 flex justify-center items-center">
-                <button onClick={a => {
-
+                <button onClick={() => {
                   press(x, y);
-                }} className="w-full h-full text-2xl" style={x == 9 || y == 0 || x == 0 || y == 9 ? { border: `4px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
-                  {x == 9 ? <span className="text-2xl" style={{ color: `rgb(${state[0]})` }}>{y == chain ? "▶" : "▷"}</span> : undefined}
+                }} className="w-full h-full text-2xl" style={x === 9 || y === 0 || x === 0 || y === 9 ? { border: `4px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
+                  {x === 9 ? <span className="text-2xl" style={{ color: `rgb(${state[0]})` }}>{y === chain ? "▶" : "▷"}</span> : undefined}
                 </button>
-              </div>
+              </div>;
             })
           }
         </div>
