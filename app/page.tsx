@@ -19,14 +19,6 @@ const notes = [
   [Pitch.BNeg1, Pitch.C0, Pitch.CSharp0, Pitch.D0, Pitch.DSharp0, Pitch.E0, Pitch.F0, Pitch.FSharp0, Pitch.G0]
 ];
 
-const rightLEDnotes = [
-  Pitch.F6, Pitch.G5, Pitch.A4, Pitch.B3, Pitch.CSharp3, Pitch.DSharp2, Pitch.F1, Pitch.G0
-];
-
-const topLEDNotes = [
-  Pitch.G6, Pitch.GSharp6, Pitch.A6, Pitch.ASharp6, Pitch.B6, Pitch.C7, Pitch.CSharp7, Pitch.D7, Pitch.DSharp7
-];
-
 const one = [
   [11, -80, 104],
   [11, -80, 105],
@@ -162,7 +154,7 @@ export default function Home() {
 
   const [chain, setChain] = useState(1);
 
-  let chainRef = useRef<number>(1);
+  const chainRef = useRef<number>(1);
 
   const session = useRef<Session>({ keySoundsNum: {}, ledNum: {} });
 
