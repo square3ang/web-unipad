@@ -549,6 +549,14 @@ export default function Home() {
 
   const grid = Array(10 * 10).fill(0);
 
+  for (let idx = 0; idx < grid.length; idx++) {
+    let y = Math.floor(idx / 10);
+    let x = idx % 10;
+
+    let state = useState("0,0,0");
+    gridRef.current[y * 10 + x] = state;
+  }
+
   return (<>
     <header className="p-5 bg-gray-700 text-white text-3xl flex justify-between items-center">
       <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
@@ -805,8 +813,7 @@ export default function Home() {
             grid.map((key, index) => {
               let y = Math.floor(index / 10);
               let x = index % 10;
-              let state = useState("0,0,0");
-              gridRef.current[y * 10 + x] = state;
+              let state = gridRef.current[y * 10 + x]
               if (x == 0 && y == 0) return <div key={index} />
               if (x == 0 && y == 9) return <div key={index} />
               if (x == 9 && y == 0) return <div key={index} className="w-16 h-16 flex justify-center items-center"><div className="w-12 h-12 rounded-xl" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>
