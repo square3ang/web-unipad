@@ -203,32 +203,36 @@ export default function Home() {
     }
   }
 
+  function setMiscLED(code: number, velo: number) {
+    if (modelType.current == "mk2" || modelType.current == "pro") {
+      // legacy
+      midiOutput.current?.send(new Uint8Array([
+        240,
+        0, 32, 41,
+        2, deviceCode[modelType.current],
+        10,
+        code,
+        velo,
+        247
+      ]));
+    }
+    else {
+      midiOutput.current?.send(new Uint8Array([
+        240,
+        0, 32, 41,
+        2, deviceCode[modelType.current],
+        3, 0,
+        code,
+        velo,
+        247
+      ]));
+    }
+  }
+
   function setCircleLED(x: number, y: number, velo: number) {
     let code = circleCodes[modelType.current][XYtoCircle(x, y) - 1];
     if (code != undefined && midiOutput) {
-      if (modelType.current == "mk2" || modelType.current == "pro") {
-        // legacy
-        midiOutput.current?.send(new Uint8Array([
-          240,
-          0, 32, 41,
-          2, deviceCode[modelType.current],
-          10,
-          code[2],
-          velo,
-          247
-        ]));
-      }
-      else {
-        midiOutput.current?.send(new Uint8Array([
-          240,
-          0, 32, 41,
-          2, deviceCode[modelType.current],
-          3, 0,
-          code[2],
-          velo,
-          247
-        ]));
-      }
+      setMiscLED(code[2], velo);
     }
     gridRef.current[y * 10 + x][1](pallete[velo]);
 
@@ -369,6 +373,12 @@ export default function Home() {
   async function runLED(l: { type: string, args: string[] }, sess: string) {
     if (l.type == "on" || l.type == "o") {
       let [y, x, color, velo] = l.args;
+      if (y == "l") {
+        velo = color;
+        color = x;
+        setMiscLED(99, Number(velo));
+        gridRef.current[9][1](pallete[velo]);
+      }
       if (y == "mc" || y == "*") {
         let circ = circleToXY(Number(x));
         x = circ[0] + "";
@@ -799,14 +809,14 @@ export default function Home() {
               gridRef.current[y * 10 + x] = state;
               if (x == 0 && y == 0) return <div key={index} />
               if (x == 0 && y == 9) return <div key={index} />
-              if (x == 9 && y == 0) return <div key={index} />
+              if (x == 9 && y == 0) return <div key={index} className="w-16 h-16 flex justify-center items-center"><div className="w-12 h-12 rounded-xl" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>
               if (x == 9 && y == 9) return <div key={index} />
-              return <div key={index} className={`w-16 h-16 flex justify-center items-center`}>
+              return <div key={index} className="w-16 h-16 flex justify-center items-center">
                 <button onClick={a => {
 
                   press(x, y);
                 }} className="w-full h-full text-2xl" style={x == 9 || y == 0 || x == 0 || y == 9 ? { border: `4px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
-                  {x == 9 ? <span className="text-2xl font-bold" style={{ color: `rgb(${state[0]})` }}>{y == chain ? "▶" : "▷"}</span> : undefined}
+                  {x == 9 ? <span className="text-2xl" style={{ color: `rgb(${state[0]})` }}>{y == chain ? "▶" : "▷"}</span> : undefined}
                 </button>
               </div>
             })
