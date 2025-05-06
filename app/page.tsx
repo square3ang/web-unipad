@@ -5,6 +5,7 @@ import { createRef, Dispatch, Ref, RefObject, SetStateAction, useEffect, useRef,
 import JSZip from "jszip";
 import { Input, Output, WebMidi } from "webmidi";
 import { Howl, Howler } from "howler";
+import { v4 as uuid } from "uuid";
 
 const notes = [
   [Pitch.G6, Pitch.GSharp6, Pitch.A6, Pitch.ASharp6, Pitch.B6, Pitch.C7, Pitch.CSharp7, Pitch.D7, Pitch.DSharp7],
@@ -26,28 +27,98 @@ const topLEDNotes = [
   Pitch.G6, Pitch.GSharp6, Pitch.A6, Pitch.ASharp6, Pitch.B6, Pitch.C7, Pitch.CSharp7, Pitch.D7, Pitch.DSharp7
 ];
 
+const one = [
+  [11, -80, 104],
+  [11, -80, 105],
+  [11, -80, 106],
+  [11, -80, 107],
+  [11, -80, 108],
+  [11, -80, 109],
+  [11, -80, 110],
+  [11, -80, 111],
+  [9, -112, 89],
+  [9, -112, 79],
+  [9, -112, 69],
+  [9, -112, 59],
+  [9, -112, 49],
+  [9, -112, 39],
+  [9, -112, 29],
+  [9, -112, 19]
+];
+
+const two = [
+  [11, -80, 91],
+  [11, -80, 92],
+  [11, -80, 93],
+  [11, -80, 94],
+  [11, -80, 95],
+  [11, -80, 96],
+  [11, -80, 97],
+  [11, -80, 98],
+  [11, -80, 89],
+  [11, -80, 79],
+  [11, -80, 69],
+  [11, -80, 59],
+  [11, -80, 49],
+  [11, -80, 39],
+  [11, -80, 29],
+  [11, -80, 19],
+  [11, -80, 8],
+  [11, -80, 7],
+  [11, -80, 6],
+  [11, -80, 5],
+  [11, -80, 4],
+  [11, -80, 3],
+  [11, -80, 2],
+  [11, -80, 1],
+  [11, -80, 10],
+  [11, -80, 20],
+  [11, -80, 30],
+  [11, -80, 40],
+  [11, -80, 50],
+  [11, -80, 60],
+  [11, -80, 70],
+  [11, -80, 80]
+]
+
+
+const circleCodes: { [key: string]: any } = {
+  mk2: one,
+  pro: two,
+  promk3: two,
+  x: two
+}
+
+const deviceCode: { [key: string]: any } = {
+  mk2: 24,
+  pro: 16,
+  promk3: 14,
+  x: 12
+}
+
+
 type Session = { keySoundsNum: { [x: number]: { [y: number]: number } }, ledNum: { [x: number]: { [y: number]: number } } };
 
-type KeyLED = { [chain: number]: { [x: number]: { [y: number]: { type: string, args: string[], fileName: string }[][] } } };
+type KeyLED = { [chain: number]: { [x: number]: { [y: number]: { acts: { type: string, args: string[] }[], repeat: number }[] } } };
 
 function RGBtoHSV(r: number, g: number, b: number) {
   var max = Math.max(r, g, b), min = Math.min(r, g, b),
-      d = max - min,
-      h,
-      s = (max === 0 ? 0 : d / max),
-      v = max / 255;
+    d = max - min,
+    h,
+    s = (max === 0 ? 0 : d / max),
+    v = max / 255;
 
   switch (max) {
-      case min: h = 0; break;
-      case r: h = (g - b) + d * (g < b ? 6: 0); h /= 6 * d; break;
-      case g: h = (b - r) + d * 2; h /= 6 * d; break;
-      case b: h = (r - g) + d * 4; h /= 6 * d; break;
+    case min: h = 0; break;
+    case r: h = (g - b) + d * (g < b ? 6 : 0); h /= 6 * d; break;
+    case g: h = (b - r) + d * 2; h /= 6 * d; break;
+    case b: h = (r - g) + d * 4; h /= 6 * d; break;
   }
 
   return {
-      h: h,
-      s: s,
-      v: v
+    h: h,
+    s: s,
+    v: v
   };
 }
 
@@ -59,17 +130,17 @@ function HSVtoRGB(h: number, s: number, v: number) {
   q = v * (1 - f * s);
   t = v * (1 - (1 - f) * s);
   switch (i % 6) {
-      case 0: r = v, g = t, b = p; break;
-      case 1: r = q, g = v, b = p; break;
-      case 2: r = p, g = v, b = t; break;
-      case 3: r = p, g = q, b = v; break;
-      case 4: r = t, g = p, b = v; break;
-      case 5: r = v, g = p, b = q; break;
+    case 0: r = v, g = t, b = p; break;
+    case 1: r = q, g = v, b = p; break;
+    case 2: r = p, g = v, b = t; break;
+    case 3: r = p, g = q, b = v; break;
+    case 4: r = t, g = p, b = v; break;
+    case 5: r = v, g = p, b = q; break;
   }
   return {
-      r: Math.round(r! * 255),
-      g: Math.round(g! * 255),
-      b: Math.round(b! * 255)
+    r: Math.round(r! * 255),
+    g: Math.round(g! * 255),
+    b: Math.round(b! * 255)
   };
 }
 
@@ -77,7 +148,7 @@ export default function Home() {
   const [midiInputs, setMidiInputs] = useState<Input[]>([]);
   const [midiOutputs, setMidiOutputs] = useState<Output[]>([]);
 
-  const grid = Array(8 * 9).fill(0);
+
   const gridRef = useRef<([string, Dispatch<SetStateAction<string>>])[]>(Array(8 * 9).fill(null));
   const [pallete, setPallete] = useState<any>({});
 
@@ -87,14 +158,98 @@ export default function Home() {
   const keySounds = useRef<{ [chain: number]: { [x: number]: { [y: number]: { name: string, repeat: number, chainNum: number }[] } } }>({});
   const sounds = useRef<{ [key: string]: Howl }>({});
   const keyLEDs = useRef<KeyLED>({});
+  const autoPlay = useRef<string>("");
 
-  const chain = useRef<number>(1);
+  const [chain, setChain] = useState(1);
+
+  let chainRef = useRef<number>(1);
 
   const session = useRef<Session>({ keySoundsNum: {}, ledNum: {} });
 
-  const LEDEnabled = useRef<{ [fileName: string]: { [x: number]: { [y: number]: boolean } } }>({});
+  const LEDEnabled = useRef<{ [x: number]: { [y: number]: string } }>({});
 
-  useEffect(() => { }, [grid])
+  const modelType = useRef<string>("pro");
+
+  const showChain = useRef<boolean>(false);
+
+  const autoPlaying = useRef<boolean>(false);
+
+  const stopled = useRef<boolean>(false);
+
+  async function playAuto() {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    let delayOffset = 0;
+    for (let l of autoPlay.current.split(/\r\n|\r|\n/)) {
+      if (!autoPlaying.current) {
+        break;
+      }
+      let line = l.trim();
+      let spl = line.split(" ");
+      if (spl[0] == "chain" || spl[0] == "c") {
+        press(9, Number(spl[1]));
+      }
+      else if (spl[0] == "on" || spl[0] == "o") {
+        press(Number(spl[2]), Number(spl[1]));
+      }
+      else if (spl[0] == "touch" || spl[0] == "t") {
+        press(Number(spl[2]), Number(spl[1]));
+      }
+      else if (spl[0] == "delay" || spl[0] == "d") {
+        let delay = Number(spl[1]);
+        let curtime = new Date().getTime();
+        await new Promise(resolve => setTimeout(resolve, Math.max(0, delay - delayOffset)));
+        delayOffset = new Date().getTime() - (curtime + delay - delayOffset);
+      }
+    }
+  }
+
+  function setCircleLED(x: number, y: number, velo: number) {
+    let code = circleCodes[modelType.current][XYtoCircle(x, y) - 1];
+    if (code != undefined && midiOutput) {
+      if (modelType.current == "mk2" || modelType.current == "pro") {
+        // legacy
+        midiOutput.current?.send(new Uint8Array([
+          240,
+          0, 32, 41,
+          2, deviceCode[modelType.current],
+          10,
+          code[2],
+          velo,
+          247
+        ]));
+      }
+      else {
+        midiOutput.current?.send(new Uint8Array([
+          240,
+          0, 32, 41,
+          2, deviceCode[modelType.current],
+          3, 0,
+          code[2],
+          velo,
+          247
+        ]));
+      }
+    }
+    gridRef.current[y * 10 + x][1](pallete[velo]);
+
+  }
+
+  let beforeChain = useRef(0);
+  function updateChainLED(off: boolean = false) {
+    if (!showChain.current && !off) return;
+    if (beforeChain.current != chainRef.current && beforeChain.current != 0)
+      setCircleLED(9, beforeChain.current, 0);
+    setCircleLED(9, chainRef.current, off ? 0 : 3);
+    beforeChain.current = chainRef.current;
+  }
+
+  useEffect(() => {
+    chainRef.current = chain;
+  }, [chain]);
+
+  useEffect(() => {
+    clearLED();
+  }, [pallete]);
 
   useEffect(() => {
     (async () => {
@@ -110,13 +265,12 @@ export default function Home() {
 
         let col = color.replaceAll(" ", ",").replace(";", "");
         let colspl = col.split(",");
-        let hsv = RGBtoHSV(Number(colspl[0]), Number(colspl[1]), Number(colspl[2]));
+        let hsv = RGBtoHSV(Number(colspl[0]) * 4, Number(colspl[1]) * 4, Number(colspl[2]) * 4);
         let h = hsv.h!;
         let s = hsv.s!;
         let v = hsv.v!;
-        v += 0.5;
-        s *= 0.8;
-        if (v > 1) v = 1;
+        v = v * 0.4 + 0.6;
+        s *= 0.7;
         let rgb = HSVtoRGB(h, s, v);
         col = `${rgb.r},${rgb.g},${rgb.b}`;
 
@@ -125,7 +279,7 @@ export default function Home() {
       setPallete(pal);
     })();
     (async () => {
-      const webmidi = await WebMidi.enable()
+      const webmidi = await WebMidi.enable({ sysex: true });
       setMidiInputs(WebMidi.inputs);
       setMidiOutputs(WebMidi.outputs);
     })();
@@ -133,7 +287,7 @@ export default function Home() {
 
   function playSnd(x: number, y: number) {
 
-    let b = keySounds.current[chain.current];
+    let b = keySounds.current[chainRef.current];
     if (b == undefined) return;
     if (b[x] == undefined) return;
     if (b[x][y] == undefined) return;
@@ -147,65 +301,165 @@ export default function Home() {
     let snd = session.current.keySoundsNum[x][y];
     if (sound[snd].name == undefined) return;
 
+
+    if (sound[snd].repeat != 1) {
+      if (sound[snd].repeat == 0) {
+        return; // not implemented
+      }
+      let cnt = 0;
+      sounds.current[sound[snd].name].on("end", () => {
+        cnt++;
+        if (cnt >= sound[snd].repeat) {
+          sounds.current[sound[snd].name]?.off("end");
+          return;
+        }
+        sounds.current[sound[snd].name]?.play();
+      });
+    }
     sounds.current[sound[snd].name]?.play();
+
     session.current.keySoundsNum[x][y]++;
     if (session.current.keySoundsNum[x][y] >= sound.length) {
       session.current.keySoundsNum[x][y] = 0;
     }
+    if (sound[snd].chainNum != -1) {
+      press(9, sound[snd].chainNum);
+    }
   }
 
-  async function runLED(curchain: number, l: { type: string, args: string[], fileName: string }) {
+  function circleToXY(code: number) {
+    let x = 0;
+    let y = 0;
+    if (code <= 8) {
+      x = code;
+      y = 0;
+    }
+    else if (code <= 16) {
+      y = code - 8;
+      x = 9;
+    }
+    else if (code <= 24) {
+      y = 9;
+      x = 9 - (code - 16);
+    }
+    else if (code <= 32) {
+      x = 0;
+      y = 9 - (code - 24);
+    }
+    return [x, y];
+  }
+
+  function XYtoCircle(x: number, y: number) {
+    let code = 0;
+    if (y == 0) {
+      code = x;
+    }
+    else if (x == 9) {
+      code = y + 8;
+    }
+    else if (y == 9) {
+      code = (9 - x) + 16;
+    }
+    else if (x == 0) {
+      code = (9 - y) + 24;
+    }
+    return code;
+  }
+
+  async function runLED(l: { type: string, args: string[] }, sess: string) {
     if (l.type == "on" || l.type == "o") {
       let [y, x, color, velo] = l.args;
+      if (y == "mc" || y == "*") {
+        let circ = circleToXY(Number(x));
+        x = circ[0] + "";
+        y = circ[1] + "";
+      }
       let xAsNum = Number(x);
       let yAsNum = Number(y);
       let veloAsNum = Number(velo);
+
+      if (xAsNum == 0 || yAsNum == 0 || xAsNum == 9 || yAsNum == 9) {
+        setCircleLED(xAsNum, yAsNum, veloAsNum);
+        if (LEDEnabled.current[xAsNum] == undefined) {
+          LEDEnabled.current[xAsNum] = {};
+        }
+        if (LEDEnabled.current[xAsNum][yAsNum] == undefined) {
+          LEDEnabled.current[xAsNum][yAsNum] = sess;
+        }
+        LEDEnabled.current[xAsNum][yAsNum] = sess;
+        return;
+      }
+
       if (midiOutput) {
-        let note = notes[yAsNum][xAsNum - 1];
-        if (note != undefined)
-          midiOutput.current?.sendNoteOn(note, { rawAttack: veloAsNum, channels: 1 });
+        try {
+          let note = notes[yAsNum][xAsNum - 1];
+
+          if (note != undefined)
+            midiOutput.current?.sendNoteOn(note, { rawAttack: veloAsNum, channels: 1 });
+        }
+        catch { }
       }
-      if (LEDEnabled.current[l.fileName] == undefined) {
-        LEDEnabled.current[l.fileName] = {};
+      if (LEDEnabled.current[xAsNum] == undefined) {
+        LEDEnabled.current[xAsNum] = {};
       }
-      if (LEDEnabled.current[l.fileName][xAsNum] == undefined) {
-        LEDEnabled.current[l.fileName][xAsNum] = {};
+      if (LEDEnabled.current[xAsNum][yAsNum] == undefined) {
+        LEDEnabled.current[xAsNum][yAsNum] = sess;
       }
-      if (LEDEnabled.current[l.fileName][xAsNum][yAsNum] == undefined) {
-        LEDEnabled.current[l.fileName][xAsNum][yAsNum] = false;
+      LEDEnabled.current[xAsNum][yAsNum] = sess;
+      try {
+        gridRef.current[(yAsNum) * 10 + xAsNum][1](pallete[veloAsNum]);
       }
-      LEDEnabled.current[l.fileName][xAsNum][yAsNum] = true;
-      gridRef.current[(yAsNum - 1) * 9 + xAsNum - 1][1](pallete[veloAsNum]);
+      catch { }
     }
     else if (l.type == "off" || l.type == "f") {
       let [y, x] = l.args;
+      if (y == "mc" || y == "*") {
+        let circ = circleToXY(Number(x));
+        x = circ[0] + "";
+        y = circ[1] + "";
+      }
       let xAsNum = Number(x);
       let yAsNum = Number(y);
-      if (LEDEnabled.current[l.fileName] == undefined) {
-        LEDEnabled.current[l.fileName] = {};
+      if (LEDEnabled.current[xAsNum] == undefined) {
+        LEDEnabled.current[xAsNum] = {};
       }
-      if (LEDEnabled.current[l.fileName][xAsNum] == undefined) {
-        LEDEnabled.current[l.fileName][xAsNum] = {};
-      }
-      if (LEDEnabled.current[l.fileName][xAsNum][yAsNum] == undefined) {
-        LEDEnabled.current[l.fileName][xAsNum][yAsNum] = false;
+      if (LEDEnabled.current[xAsNum][yAsNum] == undefined) {
+        LEDEnabled.current[xAsNum][yAsNum] = "unknown";
       }
 
-      if (!LEDEnabled.current[l.fileName][xAsNum][yAsNum]) return;
+      if (LEDEnabled.current[xAsNum][yAsNum] != sess) return;
+
+      if (xAsNum == 0 || yAsNum == 0 || xAsNum == 9 || yAsNum == 9) {
+        setCircleLED(xAsNum, yAsNum, 0);
+        LEDEnabled.current[xAsNum][yAsNum] = "unknown";
+        return;
+      }
 
       if (midiOutput) {
-        let note = notes[yAsNum][xAsNum - 1];
-        if (note != undefined)
-          midiOutput.current?.sendNoteOn(note, { rawAttack: 0, channels: 1 });
+        try {
+
+          let note = notes[yAsNum][xAsNum - 1];
+          if (note != undefined)
+            midiOutput.current?.sendNoteOn(note, { rawAttack: 0, channels: 1 });
+        }
+        catch (err) {
+          console.error(err);
+        }
       }
-      LEDEnabled.current[l.fileName][xAsNum][yAsNum] = false;
-      gridRef.current[(yAsNum - 1) * 9 + xAsNum - 1][1](pallete[0]);
+      LEDEnabled.current[xAsNum][yAsNum] = "unknown";
+      try {
+        gridRef.current[(yAsNum) * 10 + xAsNum][1](pallete[0]);
+      }
+      catch (err) {
+        console.error(err);
+      }
 
     }
   }
 
   async function playLED(x: number, y: number) {
-    let c = keyLEDs.current[chain.current];
+    stopled.current = false;
+    let c = keyLEDs.current[chainRef.current];
     if (c == undefined) return;
     if (c[x] == undefined) return;
     if (c[x][y] == undefined) return;
@@ -223,29 +477,35 @@ export default function Home() {
       session.current.ledNum[x][y] = 0;
     }
     if (l == undefined) return;
-    let curchain = chain.current;
     let delayOffset = 0;
-    for (let i = 0; i < l.length; i++) {
-      let l2 = l[i];
+    let sess = uuid();
 
-      if (l2.type == "delay" || l2.type == "d") {
-        let delay = Number(l2.args[0]);
-        let curtime = new Date().getTime();
-        await new Promise(resolve => setTimeout(resolve, delay - delayOffset));
-        delayOffset = new Date().getTime() - (curtime + (delay - delayOffset));
-        continue;
+    for (let asdf = 0; asdf < l.repeat; asdf++) {
+      for (let i = 0; i < l.acts.length; i++) {
+        if (stopled.current) return;
+        let l2 = l.acts[i];
+
+        if (l2.type == "delay" || l2.type == "d") {
+          let delay = Number(l2.args[0]);
+          let curtime = new Date().getTime();
+          await new Promise(resolve => setTimeout(resolve, Math.max(0, delay - delayOffset)));
+          delayOffset = new Date().getTime() - (curtime + delay - delayOffset);
+          continue;
+        }
+
+        await runLED(l2, sess);
+        updateChainLED();
       }
-
-      await runLED(curchain, l2);
     }
 
   }
 
   function press(x: number, y: number) {
     if (x == 9) {
-      console.log("set chain " + y);
-      chain.current = y;
+      setChain(y);
       session.current = { keySoundsNum: {}, ledNum: {} };
+      chainRef.current = y;
+      updateChainLED();
       return;
     }
     playSnd(x, y);
@@ -253,28 +513,40 @@ export default function Home() {
   }
 
   function clearLED() {
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 9; j++) {
+    stopled.current = true;
+    for (let i = 0; i < 10; i++) {
+      for (let j = 0; j < 10; j++) {
         LEDEnabled.current = {};
-        gridRef.current[i * 9 + j][1](pallete[0]);
+        gridRef.current[i * 10 + j][1](pallete[0]);
+
+        let x = j;
+        let y = i;
+
+        if (x == 0 || y == 0 || x == 9 || y == 9) {
+          setCircleLED(x, y, 0);
+          continue;
+        }
 
         if (midiOutput) {
-          let note = notes[j][i];
+          let note = notes[y][x - 1];
           if (note != undefined)
             midiOutput.current?.sendNoteOn(note, { rawAttack: 0, channels: 1 });
         }
       }
     }
+    updateChainLED();
   }
 
+  const grid = Array(10 * 10).fill(0);
+
   return (<>
-    <header className="p-10 bg-gray-700 text-white text-3xl flex justify-between items-center">
+    <header className="p-5 bg-gray-700 text-white text-3xl flex justify-between items-center">
       <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
       <div>
         <button onClick={async a => {
           session.current = { keySoundsNum: {}, ledNum: {} };
           LEDEnabled.current = {};
-          chain.current = 1;
+          setChain(1);
           clearLED();
           let newsounds: { [key: string]: Howl } = {};
           let newkeySounds: { [chain: number]: { [x: number]: { [y: number]: { name: string, repeat: number, chainNum: number }[] } } } = {};
@@ -328,7 +600,7 @@ export default function Home() {
 
               newsounds[name] = sound;
             }
-            if (dat.name == "keySound") {
+            if (dat.name.toLowerCase() == "keysound") {
               const spl = dat.name.split("/");
               const name = spl[spl.length - 1].trim();
               const txt = await dat.async("text");
@@ -354,9 +626,13 @@ export default function Home() {
               }
             }
 
+            if (dat.name.toLowerCase() == "autoplay") {
+              autoPlay.current = await dat.async("text");
+            }
+
             if (dat.name.toLowerCase().startsWith("keyled/")) {
               const txt = await dat.async("text");
-              const lines = txt.split("\n");
+              const lines = txt.split(/\r\n|\r|\n/);
               const splitted = dat.name.split("/");
               const name = splitted[splitted.length - 1].trim();
               let [chain, y, x, repeat, multimap] = name.split(" ");
@@ -383,13 +659,12 @@ export default function Home() {
                 newkeyLEDs[chainAsNum][xAsNum][yAsNum] = [];
               }
 
-              newkeyLEDs[chainAsNum][xAsNum][yAsNum].push([]);
+              newkeyLEDs[chainAsNum][xAsNum][yAsNum].push({ repeat: Number(repeat), acts: [] });
               let idx = newkeyLEDs[chainAsNum][xAsNum][yAsNum].length - 1;
-
               for (let line of lines) {
                 if (line.trim() == "") continue;
                 let splitted = line.trim().split(" ");
-                newkeyLEDs[chainAsNum][xAsNum][yAsNum][idx].push({ type: splitted[0], args: splitted.slice(1), fileName: name });
+                newkeyLEDs[chainAsNum][xAsNum][yAsNum][idx].acts.push({ type: splitted[0], args: splitted.slice(1) });
               }
             }
 
@@ -472,6 +747,16 @@ export default function Home() {
               }) : undefined
             }
           </select>
+        </div><div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+          ModelType
+          <select onChange={a => {
+            modelType.current = a.target.value;
+          }} className="bg-gray-300 text-black p-2 rounded w-56">
+            <option value="pro">Pro</option>
+            <option value="mk2">MK2</option>
+            <option value="promk3">Pro MK3</option>
+            <option value="x">X</option>
+          </select>
         </div>
         <button onClick={a => {
           clearLED();
@@ -480,24 +765,49 @@ export default function Home() {
       <div className="text-gray-300 flex gap-5 justify-center items-center mt-10">
 
         <div className="flex justify-center items-center">
-          <input type="checkbox" className="w-6 h-6" defaultChecked={true} disabled />
-          <label className="text-xl font-bold ml-1">Will be added</label>
+          <input type="checkbox" className="w-6 h-6" defaultChecked={false} onChange={a => {
+            showChain.current = a.target.checked;
+            if (a.target.checked) {
+              updateChainLED();
+            }
+            else {
+              updateChainLED(true);
+            }
+          }} />
+          <label className="text-xl font-bold ml-1">Show Chain</label>
+        </div>
+
+        <div className="flex justify-center items-center">
+          <input type="checkbox" className="w-6 h-6" defaultChecked={false} onChange={a => {
+            autoPlaying.current = a.target.checked;
+            clearLED();
+            press(9, 1);
+            if (a.target.checked) {
+              playAuto();
+            }
+          }} />
+          <label className="text-xl font-bold ml-1">Autoplay</label>
         </div>
       </div>
       <div className="flex justify-center items-center mt-10 text-gray-300">
-        <div className="grid grid-cols-9 gap-2">
+        <div className="grid grid-cols-10 gap-2">
           {
             grid.map((key, index) => {
-              let y = Math.floor(index / 9);
-              let x = index % 9;
-              let state = useState("128,128,128");
-              gridRef.current[y * 9 + x] = state;
-
+              let y = Math.floor(index / 10);
+              let x = index % 10;
+              let state = useState("0,0,0");
+              gridRef.current[y * 10 + x] = state;
+              if (x == 0 && y == 0) return <div key={index} />
+              if (x == 0 && y == 9) return <div key={index} />
+              if (x == 9 && y == 0) return <div key={index} />
+              if (x == 9 && y == 9) return <div key={index} />
               return <div key={index} className={`w-16 h-16 flex justify-center items-center`}>
                 <button onClick={a => {
 
-                  press(x + 1, y + 1);
-                }} className={`w-full h-full ${x == 8 ? "rounded-full" : "rounded-lg"}`} style={{ backgroundColor: `rgb(${state[0]})` }}></button>
+                  press(x, y);
+                }} className="w-full h-full text-2xl" style={x == 9 || y == 0 || x == 0 || y == 9 ? { border: `4px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
+                  {x == 9 ? <span className="text-2xl font-bold" style={{ color: `rgb(${state[0]})` }}>{y == chain ? "▶" : "▷"}</span> : undefined}
+                </button>
               </div>
             })
           }
