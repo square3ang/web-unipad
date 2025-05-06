@@ -112,19 +112,43 @@ function RGBtoHSV(r: number, g: number, b: number) {
 }
 
 function HSVtoRGB(h: number, s: number, v: number) {
-  let r, g, b, i, f, p, q, t;
-  i = Math.floor(h * 6);
-  f = h * 6 - i;
-  p = v * (1 - s);
-  q = v * (1 - f * s);
-  t = v * (1 - (1 - f) * s);
+  let r, g, b;
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
   switch (i % 6) {
-    case 0: r = v, g = t, b = p; break;
-    case 1: r = q, g = v, b = p; break;
-    case 2: r = p, g = v, b = t; break;
-    case 3: r = p, g = q, b = v; break;
-    case 4: r = t, g = p, b = v; break;
-    case 5: r = v, g = p, b = q; break;
+    case 0:
+      r = v;
+      g = t;
+      b = p;
+      break;
+    case 1:
+      r = q;
+      g = v;
+      b = p;
+      break;
+    case 2:
+      r = p;
+      g = v;
+      b = t;
+      break;
+    case 3:
+      r = p;
+      g = q;
+      b = v;
+      break;
+    case 4:
+      r = t;
+      g = p;
+      b = v;
+      break;
+    case 5:
+      r = v;
+      g = p;
+      b = q;
+      break;
   }
   return {
     r: Math.round(r! * 255),
@@ -238,43 +262,7 @@ export default function Home() {
     chainRef.current = chain;
   }, [chain]);
 
-  useEffect(() => {
-    clearLED();
-  }, [pallete]);
 
-  useEffect(() => {
-    (async () => {
-      const palleteReq = await fetch("/pallete.txt");
-      const txt = await palleteReq.text();
-      const arr = txt.split("\n");
-      const pal: { [key: string]: string } = {};
-      for (const val of arr) {
-        const spl = val.split(",");
-        if (spl.length < 2) continue;
-        const velo = spl[0].trim();
-        const color = spl[1].trim();
-
-        let col = color.replaceAll(" ", ",").replace(";", "");
-        const colspl = col.split(",");
-        const hsv = RGBtoHSV(Number(colspl[0]) * 4, Number(colspl[1]) * 4, Number(colspl[2]) * 4);
-        const h = hsv.h!;
-        const s = hsv.s!;
-        let v = hsv.v!;
-        v = v * 0.4 + 0.6;
-        const adjustedS = s * 0.7;
-        const rgb = HSVtoRGB(h, adjustedS, v);
-        col = `${rgb.r},${rgb.g},${rgb.b}`;
-
-        pal[velo] = col;
-      }
-      setPallete(pal);
-    })();
-    (async () => {
-      await WebMidi.enable({ sysex: true });
-      setMidiInputs(WebMidi.inputs);
-      setMidiOutputs(WebMidi.outputs);
-    })();
-  }, [clearLED]);
 
   function playSnd(x: number, y: number) {
     const b = keySounds.current[chainRef.current];
@@ -529,15 +517,60 @@ export default function Home() {
     updateChainLED();
   }
 
-  const grid = Array(10 * 10).fill(0);
+  const [gridStates, setGridStates] = useState(() => Array(10 * 10).fill("0,0,0"));
 
-  for (let idx = 0; idx < grid.length; idx++) {
-    const y = Math.floor(idx / 10);
-    const x = idx % 10;
+  // helper function to update a single cell color
+  const updateCellState = (index: number, color: string) => {
+    setGridStates(prev => {
+      const newStates = [...prev];
+      newStates[index] = color;
+      return newStates;
+    });
+  };
 
-    const state = useState("0,0,0");
-    gridRef.current[y * 10 + x] = state;
-  }
+  // initialize gridRef with current state and updater for each cell
+  gridRef.current = gridStates.map((color, index) => {
+    return [color, (newColor: string) => updateCellState(index, newColor)] as [string, Dispatch<SetStateAction<string>>];
+  });
+
+  useEffect(() => {
+    clearLED();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pallete]);
+
+  useEffect(() => {
+    (async () => {
+      const palleteReq = await fetch("/pallete.txt");
+      const txt = await palleteReq.text();
+      const arr = txt.split("\n");
+      const pal: { [key: string]: string } = {};
+      for (const val of arr) {
+        const spl = val.split(",");
+        if (spl.length < 2) continue;
+        const velo = spl[0].trim();
+        const color = spl[1].trim();
+
+        let col = color.replaceAll(" ", ",").replace(";", "");
+        const colspl = col.split(",");
+        const hsv = RGBtoHSV(Number(colspl[0]) * 4, Number(colspl[1]) * 4, Number(colspl[2]) * 4);
+        const h = hsv.h!;
+        const s = hsv.s!;
+        let v = hsv.v!;
+        v = v * 0.4 + 0.6;
+        const adjustedS = s * 0.7;
+        const rgb = HSVtoRGB(h, adjustedS, v);
+        col = `${rgb.r},${rgb.g},${rgb.b}`;
+
+        pal[velo] = col;
+      }
+      setPallete(pal);
+    })();
+    (async () => {
+      await WebMidi.enable({ sysex: true });
+      setMidiInputs(WebMidi.inputs);
+      setMidiOutputs(WebMidi.outputs);
+    })();
+  }, []);
 
   return (<>
     <header className="p-5 bg-gray-700 text-white text-3xl flex justify-between items-center">
@@ -551,7 +584,16 @@ export default function Home() {
           const newsounds: { [key: string]: Howl } = {};
           const newkeySounds: { [chain: number]: { [x: number]: { [y: number]: { name: string, repeat: number, chainNum: number }[] } } } = {};
           const newkeyLEDs: KeyLED = {};
-          const [fileHandle] = await (window as any).showOpenFilePicker({
+          const [fileHandle] = await (window as unknown as {
+            showOpenFilePicker: (options: {
+              types: {
+                description: string;
+                accept: { [mime: string]: string[] };
+              }[];
+              excludeAcceptAllOption: boolean;
+              multiple: boolean;
+            }) => Promise<FileSystemFileHandle[]>
+          }).showOpenFilePicker({
             types: [
               {
                 description: "Unipad Zip",
@@ -633,12 +675,12 @@ export default function Home() {
               const lines = txt.split(/\r\n|\r|\n/);
               const splitted = dat.name.split("/");
               const name = splitted[splitted.length - 1].trim();
-              const [chain, y, x, repeat, multimap] = name.split(" ");
+              const [chain, y, x, repeat] = name.split(" ");
               const chainAsNum = Number(chain);
               const xAsNum = Number(x);
               const yAsNum = Number(y);
 
-              const multimapValue = multimap === undefined ? "a" : multimap;
+              //const multimapValue = multimap === undefined ? "a" : multimap;
 
               if (session.current.ledNum[xAsNum] == undefined) {
                 session.current.ledNum[xAsNum] = {};
@@ -788,7 +830,7 @@ export default function Home() {
       <div className="flex justify-center items-center mt-10 text-gray-300">
         <div className="grid grid-cols-10 gap-2">
           {
-            grid.map((key, index) => {
+            gridStates.map((key, index) => {
               const y = Math.floor(index / 10);
               const x = index % 10;
               const state = gridRef.current[y * 10 + x];
