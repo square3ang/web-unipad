@@ -472,6 +472,7 @@ export default function Home() {
   }, [pallete]);
 
   useEffect(() => {
+    (screen.orientation as unknown as { lock: (orientation: string) => Promise<void> }).lock("landscape");
     (async () => {
       const palleteReq = await fetch("/pallete.txt");
       const txt = await palleteReq.text();
@@ -765,8 +766,8 @@ export default function Home() {
           <label className="text-xl font-bold ml-1">Autoplay</label>
         </div>
       </div>
-      <div id="virtualdevice" className="flex justify-center items-center" style={{ background: "#222222" }}>
-        <div className="flex justify-center items-center mt-5 text-gray-30 bg-black p-5 rounded-lg">
+      <div id="virtualdevice" className="flex justify-center items-center mt-5" style={{ background: "#222222" }}>
+        <div className="flex justify-center items-center text-gray-30 bg-black p-5 rounded-lg">
           <div className="grid grid-cols-10 gap-2">
             {
               gridStates.map((key, index) => {
