@@ -468,7 +468,7 @@ export default function Home() {
 
   useEffect(() => {
     clearLED();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pallete]);
 
   useEffect(() => {
@@ -488,7 +488,7 @@ export default function Home() {
         let r = Number(colspl[0]) * 4;
         let g = Number(colspl[1]) * 4;
         let b = Number(colspl[2]) * 4;
-        
+
         r = 80 + (255 - 80) * (r / 255);
         g = 80 + (255 - 80) * (g / 255);
         b = 80 + (255 - 80) * (b / 255);
@@ -505,6 +505,8 @@ export default function Home() {
       setMidiOutputs(WebMidi.outputs);
     })();
   }, []);
+
+  const [touch, setTouch] = useState(false);
 
   return (<>
     <header className="p-3 pl-10 bg-gray-700 text-white text-3xl flex justify-between items-center">
@@ -774,8 +776,16 @@ export default function Home() {
               if (x === 9 && y === 9) return <div key={index} />;
               return <div key={index} className="w-12 h-12 flex justify-center items-center">
                 <button onClick={() => {
+                  if (touch) {
+                    setTouch(false);
+                    return;
+                  }
                   press(x, y);
-                }} className="w-full h-full text-2xl rounded-sm" style={x === 9 || y === 0 || x === 0 || y === 9 ? { border: `3px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
+                }}
+                  onTouchStart={() => {
+                    press(x, y);
+                    setTouch(true);
+                  }} className="w-full h-full text-2xl rounded-sm" style={x === 9 || y === 0 || x === 0 || y === 9 ? { border: `3px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
                   {x === 9 ? <span className="text-2xl" style={{ color: `rgb(${state[0]})` }}>{y === chain ? "▶" : "▷"}</span> : undefined}
                 </button>
               </div>;
