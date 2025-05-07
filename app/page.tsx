@@ -90,73 +90,6 @@ type Session = { keySoundsNum: { [x: number]: { [y: number]: number } }, ledNum:
 
 type KeyLED = { [chain: number]: { [x: number]: { [y: number]: { acts: { type: string, args: string[] }[], repeat: number }[] } } };
 
-function RGBtoHSV(r: number, g: number, b: number) {
-  const max = Math.max(r, g, b), min = Math.min(r, g, b),
-    d = max - min,
-    s = (max === 0 ? 0 : d / max),
-    v = max / 255;
-  let h = 0;
-
-  switch (max) {
-    case min: h = 0; break;
-    case r: h = (g - b) + d * (g < b ? 6 : 0); h /= 6 * d; break;
-    case g: h = (b - r) + d * 2; h /= 6 * d; break;
-    case b: h = (r - g) + d * 4; h /= 6 * d; break;
-  }
-
-  return {
-    h: h,
-    s: s,
-    v: v
-  };
-}
-
-function HSVtoRGB(h: number, s: number, v: number) {
-  let r, g, b;
-  const i = Math.floor(h * 6);
-  const f = h * 6 - i;
-  const p = v * (1 - s);
-  const q = v * (1 - f * s);
-  const t = v * (1 - (1 - f) * s);
-  switch (i % 6) {
-    case 0:
-      r = v;
-      g = t;
-      b = p;
-      break;
-    case 1:
-      r = q;
-      g = v;
-      b = p;
-      break;
-    case 2:
-      r = p;
-      g = v;
-      b = t;
-      break;
-    case 3:
-      r = p;
-      g = q;
-      b = v;
-      break;
-    case 4:
-      r = t;
-      g = p;
-      b = v;
-      break;
-    case 5:
-      r = v;
-      g = p;
-      b = q;
-      break;
-  }
-  return {
-    r: Math.round(r! * 255),
-    g: Math.round(g! * 255),
-    b: Math.round(b! * 255)
-  };
-}
-
 export default function Home() {
   const [midiInputs, setMidiInputs] = useState<Input[]>([]);
   const [midiOutputs, setMidiOutputs] = useState<Output[]>([]);
@@ -552,14 +485,15 @@ export default function Home() {
 
         let col = color.replaceAll(" ", ",").replace(";", "");
         const colspl = col.split(",");
-        const hsv = RGBtoHSV(Number(colspl[0]) * 4, Number(colspl[1]) * 4, Number(colspl[2]) * 4);
-        const h = hsv.h!;
-        const s = hsv.s!;
-        let v = hsv.v!;
-        v = v * 0.4 + 0.6;
-        const adjustedS = s * 0.7;
-        const rgb = HSVtoRGB(h, adjustedS, v);
-        col = `${rgb.r},${rgb.g},${rgb.b}`;
+        let r = Number(colspl[0]) * 4;
+        let g = Number(colspl[1]) * 4;
+        let b = Number(colspl[2]) * 4;
+        
+        r = 80 + (255 - 80) * (r / 255);
+        g = 80 + (255 - 80) * (g / 255);
+        b = 80 + (255 - 80) * (b / 255);
+
+        col = `${r},${g},${b}`;
 
         pal[velo] = col;
       }
@@ -573,7 +507,7 @@ export default function Home() {
   }, []);
 
   return (<>
-    <header className="p-5 bg-gray-700 text-white text-3xl flex justify-between items-center">
+    <header className="p-3 pl-10 bg-gray-700 text-white text-3xl flex justify-between items-center">
       <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
       <div>
         <button onClick={async () => {
@@ -827,7 +761,7 @@ export default function Home() {
           <label className="text-xl font-bold ml-1">Autoplay</label>
         </div>
       </div>
-      <div className="flex justify-center items-center mt-10 text-gray-300">
+      <div className="flex justify-center items-center mt-10 text-gray-30 bg-black p-5 rounded-lg">
         <div className="grid grid-cols-10 gap-2">
           {
             gridStates.map((key, index) => {
@@ -836,12 +770,12 @@ export default function Home() {
               const state = gridRef.current[y * 10 + x];
               if (x === 0 && y === 0) return <div key={index} />;
               if (x === 0 && y === 9) return <div key={index} />;
-              if (x === 9 && y === 0) return <div key={index} className="w-16 h-16 flex justify-center items-center"><div className="w-12 h-12 rounded-xl" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>;
+              if (x === 9 && y === 0) return <div key={index} className="w-12 h-12 flex justify-center items-center"><div className="w-10 h-10 rounded-md" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>;
               if (x === 9 && y === 9) return <div key={index} />;
-              return <div key={index} className="w-16 h-16 flex justify-center items-center">
+              return <div key={index} className="w-12 h-12 flex justify-center items-center">
                 <button onClick={() => {
                   press(x, y);
-                }} className="w-full h-full text-2xl" style={x === 9 || y === 0 || x === 0 || y === 9 ? { border: `4px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
+                }} className="w-full h-full text-2xl rounded-sm" style={x === 9 || y === 0 || x === 0 || y === 9 ? { border: `3px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
                   {x === 9 ? <span className="text-2xl" style={{ color: `rgb(${state[0]})` }}>{y === chain ? "▶" : "▷"}</span> : undefined}
                 </button>
               </div>;
