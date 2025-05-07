@@ -472,7 +472,6 @@ export default function Home() {
   }, [pallete]);
 
   useEffect(() => {
-    (screen.orientation as unknown as { lock: (orientation: string) => Promise<void> }).lock("landscape");
     (async () => {
       const palleteReq = await fetch("/pallete.txt");
       const txt = await palleteReq.text();
@@ -734,8 +733,9 @@ export default function Home() {
           console.log(newsounds);
           console.log(newkeySounds);
         }} className="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Open</button>
-        <button onClick={() => {
-          document.getElementById("virtualdevice")?.requestFullscreen();
+        <button onClick={async () => {
+          await document.getElementById("virtualdevice")?.requestFullscreen();
+          await (screen.orientation as unknown as { lock: (orientation: string) => Promise<void> }).lock("landscape");
         }} className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Fullscreen</button>
       </div>
     </header >
