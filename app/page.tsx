@@ -785,8 +785,8 @@ export default function Home() {
                   onTouchStart={() => {
                     press(x, y);
                     setTouch(true);
-                  }} className="w-full h-full text-2xl rounded-sm" style={x === 9 || y === 0 || x === 0 || y === 9 ? { border: `3px solid rgb(${state[0]})`, backgroundColor: "black" } : { backgroundColor: `rgb(${state[0]})` }}>
-                  {x === 9 ? <span className="text-2xl" style={{ color: `rgb(${state[0]})` }}>{y === chain ? "▶" : "▷"}</span> : undefined}
+                  }} className="w-full h-full text-2xl rounded-sm" style={x === 9 || y === 0 || x === 0 || y === 9 ? { backgroundColor: "#1b1b1b" } : { backgroundColor: `rgb(${state[0]})` }}>
+                  {x === 9 ? <><span className="text-2xl block" style={{ color: `rgb(${state[0]})`, transform: "scaleY(1.5)" }}>&gt;</span>{ chain == y ? <span className="absolute block text-2xl text-white opacity-25 ml-20 -mt-8">&lt;</span> : undefined}</> :  <span className="text-xs block" style={{ color: `rgb(${state[0]})` }}>Text</span>}
                 </button>
               </div>;
             })
