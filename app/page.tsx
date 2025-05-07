@@ -511,7 +511,88 @@ export default function Home() {
   return (<>
     <header className="p-3 pl-10 bg-gray-700 text-white text-3xl flex justify-between items-center">
       <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
-      <div>
+      <div className="flex gap-2 justify-center items-center">
+        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+          Input
+          <select onChange={a => {
+            if (a.target.value === "none") {
+              midiInput.current = null;
+              return;
+            }
+            if (midiInput.current) {
+              midiInput.current.removeListener("noteon");
+              midiInput.current.removeListener("noteoff");
+            }
+            const mdi = midiInputs.find(key => key.id === a.target.value) ?? null;
+            midiInput.current = mdi;
+            if (mdi) {
+              mdi.addListener("noteon", e => {
+                const noteValue = e.note.number;
+                let row = 0;
+                let col = 0;
+                for (row = 0; row < notes.length; row++) {
+                  col = (notes[row] as number[]).indexOf(noteValue);
+                  if (col !== -1) {
+                    break;
+                  }
+                }
+                col += 1;
+                press(col, row);
+              });
+              mdi.addListener("noteoff", e => {
+                const noteValue = e.note.number;
+                let row = 0;
+                let col = 0;
+                for (row = 0; row < notes.length; row++) {
+                  col = (notes[row] as number[]).indexOf(noteValue);
+                  if (col !== -1) {
+                    break;
+                  }
+                }
+                col += 1;
+              });
+            }
+          }} className="bg-gray-300 text-black p-2 rounded w-56">
+            <option value="none">None</option>
+            {
+              midiInputs ? midiInputs.map((key, index) => {
+                return <option key={index} value={key.id}>{key.name}</option>;
+              }) : undefined
+            }
+          </select>
+        </div>
+        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+          Output
+          <select onChange={a => {
+            if (a.target.value === "none") {
+              midiOutput.current = null;
+              return;
+            }
+            midiOutput.current = midiOutputs.find(key => key.id === a.target.value) ?? null;
+          }} className="bg-gray-300 text-black p-2 rounded w-56">
+            <option value="none">None</option>
+            {
+              midiOutputs ? midiOutputs.map((key, index) => {
+                return <option key={index} value={key.id}>{key.name}</option>;
+              }) : undefined
+            }
+          </select>
+        </div><div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+          ModelType
+          <select onChange={a => {
+            modelType.current = a.target.value;
+          }} className="bg-gray-300 text-black p-2 rounded w-56">
+            <option value="pro">Pro</option>
+            <option value="mk2">MK2</option>
+            <option value="promk3">Pro MK3</option>
+            <option value="x">X</option>
+          </select>
+        </div>
+        <button onClick={() => {
+          clearLED();
+        }} className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Clear LED</button>
+      </div>
+      <div className="flex gap-2 justify-center items-center">
         <button onClick={async () => {
           session.current = { keySoundsNum: {}, ledNum: {} };
           LEDEnabled.current = {};
@@ -652,92 +733,13 @@ export default function Home() {
           console.log(newsounds);
           console.log(newkeySounds);
         }} className="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Open</button>
+        <button onClick={() => {
+          document.getElementById("virtualdevice")?.requestFullscreen();
+        }} className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Fullscreen</button>
       </div>
     </header >
     <main className="flex flex-col justify-center items-center mt-5">
-      <div className="flex gap-2 justify-center items-center">
-        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
-          Input
-          <select onChange={a => {
-            if (a.target.value === "none") {
-              midiInput.current = null;
-              return;
-            }
-            if (midiInput.current) {
-              midiInput.current.removeListener("noteon");
-              midiInput.current.removeListener("noteoff");
-            }
-            const mdi = midiInputs.find(key => key.id === a.target.value) ?? null;
-            midiInput.current = mdi;
-            if (mdi) {
-              mdi.addListener("noteon", e => {
-                const noteValue = e.note.number;
-                let row = 0;
-                let col = 0;
-                for (row = 0; row < notes.length; row++) {
-                  col = (notes[row] as number[]).indexOf(noteValue);
-                  if (col !== -1) {
-                    break;
-                  }
-                }
-                col += 1;
-                press(col, row);
-              });
-              mdi.addListener("noteoff", e => {
-                const noteValue = e.note.number;
-                let row = 0;
-                let col = 0;
-                for (row = 0; row < notes.length; row++) {
-                  col = (notes[row] as number[]).indexOf(noteValue);
-                  if (col !== -1) {
-                    break;
-                  }
-                }
-                col += 1;
-              });
-            }
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="none">None</option>
-            {
-              midiInputs ? midiInputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>;
-              }) : undefined
-            }
-          </select>
-        </div>
-        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
-          Output
-          <select onChange={a => {
-            if (a.target.value === "none") {
-              midiOutput.current = null;
-              return;
-            }
-            midiOutput.current = midiOutputs.find(key => key.id === a.target.value) ?? null;
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="none">None</option>
-            {
-              midiOutputs ? midiOutputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>;
-              }) : undefined
-            }
-          </select>
-        </div><div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
-          ModelType
-          <select onChange={a => {
-            modelType.current = a.target.value;
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="pro">Pro</option>
-            <option value="mk2">MK2</option>
-            <option value="promk3">Pro MK3</option>
-            <option value="x">X</option>
-          </select>
-        </div>
-        <button onClick={() => {
-          clearLED();
-        }} className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Clear LED</button>
-      </div>
-      <div className="text-gray-300 flex gap-5 justify-center items-center mt-10">
-
+      <div className="text-gray-300 flex gap-5 justify-center items-center">
         <div className="flex justify-center items-center">
           <input type="checkbox" className="w-6 h-6" defaultChecked={false} onChange={a => {
             showChain.current = a.target.checked;
@@ -763,34 +765,36 @@ export default function Home() {
           <label className="text-xl font-bold ml-1">Autoplay</label>
         </div>
       </div>
-      <div className="flex justify-center items-center mt-10 text-gray-30 bg-black p-5 rounded-lg">
-        <div className="grid grid-cols-10 gap-2">
-          {
-            gridStates.map((key, index) => {
-              const y = Math.floor(index / 10);
-              const x = index % 10;
-              const state = gridRef.current[y * 10 + x];
-              if (x === 0 && y === 0) return <div key={index} />;
-              if (x === 0 && y === 9) return <div key={index} />;
-              if (x === 9 && y === 0) return <div key={index} className="w-12 h-12 flex justify-center items-center"><div className="w-10 h-10 rounded-md" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>;
-              if (x === 9 && y === 9) return <div key={index} />;
-              return <div key={index} className="w-12 h-12 flex justify-center items-center">
-                <button onClick={() => {
-                  if (touch) {
-                    setTouch(false);
-                    return;
-                  }
-                  press(x, y);
-                }}
-                  onTouchStart={() => {
+      <div id="virtualdevice" className="flex justify-center items-center" style={{ background: "#222222" }}>
+        <div className="flex justify-center items-center mt-5 text-gray-30 bg-black p-5 rounded-lg">
+          <div className="grid grid-cols-10 gap-2">
+            {
+              gridStates.map((key, index) => {
+                const y = Math.floor(index / 10);
+                const x = index % 10;
+                const state = gridRef.current[y * 10 + x];
+                if (x === 0 && y === 0) return <div key={index} />;
+                if (x === 0 && y === 9) return <div key={index} />;
+                if (x === 9 && y === 0) return <div key={index} className="w-12 h-12 flex justify-center items-center"><div className="w-10 h-10 rounded-md" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>;
+                if (x === 9 && y === 9) return <div key={index} />;
+                return <div key={index} className="w-12 h-12 flex justify-center items-center">
+                  <button onClick={() => {
+                    if (touch) {
+                      setTouch(false);
+                      return;
+                    }
                     press(x, y);
-                    setTouch(true);
-                  }} className="w-full h-full text-2xl rounded-sm" style={x === 9 || y === 0 || x === 0 || y === 9 ? { backgroundColor: "#1b1b1b" } : { backgroundColor: `rgb(${state[0]})` }}>
-                  {x === 9 ? <><span className="text-2xl block" style={{ color: `rgb(${state[0]})`, transform: "scaleY(1.5)" }}>&gt;</span>{ chain == y ? <span className="absolute block text-2xl text-white opacity-25 ml-20 -mt-8">&lt;</span> : undefined}</> :  <span className="text-xs block" style={{ color: `rgb(${state[0]})` }}>Text</span>}
-                </button>
-              </div>;
-            })
-          }
+                  }}
+                    onTouchStart={() => {
+                      press(x, y);
+                      setTouch(true);
+                    }} className="w-full h-full text-2xl" style={x === 9 || y === 0 || x === 0 || y === 9 ? { backgroundColor: "#1b1b1b" } : { backgroundColor: `rgb(${state[0]})` }}>
+                    {x === 9 ? <><span className="text-2xl block" style={{ color: `rgb(${state[0]})`, transform: "scaleY(1.5)" }}>&gt;</span>{chain == y ? <span className="absolute block text-2xl text-white opacity-25 ml-20 -mt-8">&lt;</span> : undefined}</> : <span className="text-xs block" style={{ color: `rgb(${state[0]})` }}>Text</span>}
+                  </button>
+                </div>;
+              })
+            }
+          </div>
         </div>
       </div>
     </main>
