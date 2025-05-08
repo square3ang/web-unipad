@@ -577,8 +577,6 @@ export default function Home() {
     })();
   }, []);
 
-  const [touch, setTouch] = useState(false);
-
   return (<>
     <header className="p-3 pl-10 bg-gray-700 text-white text-3xl flex justify-between items-center">
       <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
@@ -869,17 +867,9 @@ export default function Home() {
 
                 return <div key={index} className="w-12 h-12 flex justify-center items-center">
                   <button onPointerDown={() => {
-                    if (touch) {
-                      setTouch(false);
-                      return;
-                    }
                     press(x, y);
                   }}
                   onPointerUp={() => {
-                    if (touch) {
-                      setTouch(false);
-                      return;
-                    }
                     unpress(x, y);
                   }} className="w-full h-full text-2xl" style={{ backgroundColor: x === 9 || y === 0 || x === 0 || y === 9 ? "#1b1b1b" : `rgb(${state[0]})`, clipPath: clipPath }}>
                     {x === 9 ? <><span className="text-2xl block" style={{ color: `rgb(${state[0]})`, transform: "scaleY(1.5)" }}>&gt;</span>{chain == y ? <span className="absolute block text-2xl text-white opacity-25 ml-20 -mt-8">&lt;</span> : undefined}</> : x == 0 || y == 0 || y == 9 ? <span className="text-xs block" style={{ color: `rgb(${state[0]})` }}>Text</span> : undefined}
