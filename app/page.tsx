@@ -133,6 +133,10 @@ export default function Home() {
 
   const interruptLEDQueue = useRef<string[]>([]);
 
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+
+  const speedMultiplierRef = useRef(1);
+
   async function playAuto() {
     await new Promise(resolve => setTimeout(resolve, 500));
     let delayOffset = 0;
@@ -156,7 +160,7 @@ export default function Home() {
         unpress(Number(spl[2]), Number(spl[1]));
       }
       else if (spl[0] === "delay" || spl[0] === "d") {
-        const delay = Number(spl[1]);
+        const delay = Number(spl[1]) / speedMultiplierRef.current;
         const curtime = new Date().getTime();
         await new Promise(resolve => setTimeout(resolve, Math.max(0, delay - delayOffset)));
         delayOffset = new Date().getTime() - (curtime + delay - delayOffset);
@@ -211,6 +215,10 @@ export default function Home() {
     chainRef.current = chain;
   }, [chain]);
 
+  useEffect(() => {
+    speedMultiplierRef.current = speedMultiplier;
+  }, [speedMultiplier]);
+
 
 
   function playSnd(x: number, y: number) {
@@ -247,10 +255,12 @@ export default function Home() {
           sounds.current[sndd.name]?.off("end");
           return;
         }
-        sounds.current[sndd.name]?.play();
+        const id = sounds.current[sndd.name]?.play();
+        sounds.current[sndd.name]?.rate(speedMultiplierRef.current, id);
       });
     }
-    sounds.current[sndd.name]?.play();
+    const id = sounds.current[sndd.name]?.play();
+    sounds.current[sndd.name]?.rate(speedMultiplierRef.current, id);
 
     session.current.keySoundsNum[x][y]++;
     if (session.current.keySoundsNum[x][y] >= sound.length) {
@@ -438,7 +448,7 @@ export default function Home() {
         const l2 = l.acts[i];
 
         if (l2.type === "delay" || l2.type === "d") {
-          const delay = Number(l2.args[0]);
+          const delay = Number(l2.args[0]) / speedMultiplierRef.current;
           const curtime = new Date().getTime();
           await new Promise(resolve => setTimeout(resolve, Math.max(0, delay - delayOffset)));
           delayOffset = new Date().getTime() - (curtime + delay - delayOffset);
@@ -839,6 +849,14 @@ export default function Home() {
           <label className="text-xl font-bold ml-1">Autoplay</label>
         </div>
       </div>
+      <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold mt-5">
+        Speed Multiplier (experimental)
+        <div>
+          <input type="number" value={speedMultiplier} onChange={a => {
+            setSpeedMultiplier(Number(a.target.value));
+          }} className="bg-gray-300 p-2 rounded-lg font-bold w-24 text-black"></input> x
+        </div>
+      </div>
       <div id="virtualdevice" className="flex justify-center items-center mt-5" style={{ background: "#222222", zoom: Math.min(height, width) / (isFullScreen ? 625 : 900) }}>
         <div className="flex justify-center items-center text-gray-30 bg-black p-5 rounded-lg">
           <div className="grid grid-cols-10 gap-2">
@@ -869,9 +887,9 @@ export default function Home() {
                   <button onPointerDown={() => {
                     press(x, y);
                   }}
-                  onPointerUp={() => {
-                    unpress(x, y);
-                  }} className="w-full h-full text-2xl" style={{ backgroundColor: x === 9 || y === 0 || x === 0 || y === 9 ? "#1b1b1b" : `rgb(${state[0]})`, clipPath: clipPath }}>
+                    onPointerUp={() => {
+                      unpress(x, y);
+                    }} className="w-full h-full text-2xl" style={{ backgroundColor: x === 9 || y === 0 || x === 0 || y === 9 ? "#1b1b1b" : `rgb(${state[0]})`, clipPath: clipPath }}>
                     {x === 9 ? <><span className="text-2xl block" style={{ color: `rgb(${state[0]})`, transform: "scaleY(1.5)" }}>&gt;</span>{chain == y ? <span className="absolute block text-2xl text-white opacity-25 ml-20 -mt-8">&lt;</span> : undefined}</> : x == 0 || y == 0 || y == 9 ? <span className="text-xs block" style={{ color: `rgb(${state[0]})` }}>Text</span> : undefined}
                   </button>
                 </div>;
