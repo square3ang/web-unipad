@@ -91,6 +91,12 @@ type Session = { keySoundsNum: { [x: number]: { [y: number]: number } }, ledNum:
 type KeyLED = { [chain: number]: { [x: number]: { [y: number]: { acts: { type: string, args: string[] }[], repeat: number }[] } } };
 
 export default function Home() {
+
+  const [height, setHeight] = useState<number>(0);
+  const [width, setWidth] = useState<number>(0);
+
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+
   const [midiInputs, setMidiInputs] = useState<Input[]>([]);
   const [midiOutputs, setMidiOutputs] = useState<Output[]>([]);
 
@@ -121,6 +127,12 @@ export default function Home() {
 
   const stopled = useRef<boolean>(false);
 
+  const offLEDOnUnpress = useRef<{ [x: number]: { [y: number]: { sess: string }[] | undefined } }>([]);
+
+  const offSoundOnUnpress = useRef<{ [x: number]: { [y: number]: { sound: Howl }[] | undefined } }>([]);
+
+  const interruptLEDQueue = useRef<string[]>([]);
+
   async function playAuto() {
     await new Promise(resolve => setTimeout(resolve, 500));
     let delayOffset = 0;
@@ -136,8 +148,12 @@ export default function Home() {
       else if (spl[0] === "on" || spl[0] === "o") {
         press(Number(spl[2]), Number(spl[1]));
       }
+      else if (spl[0] === "off" || spl[0] === "f") {
+        unpress(Number(spl[2]), Number(spl[1]));
+      }
       else if (spl[0] === "touch" || spl[0] === "t") {
         press(Number(spl[2]), Number(spl[1]));
+        unpress(Number(spl[2]), Number(spl[1]));
       }
       else if (spl[0] === "delay" || spl[0] === "d") {
         const delay = Number(spl[1]);
@@ -210,23 +226,31 @@ export default function Home() {
       session.current.keySoundsNum[x][y] = 0;
     }
     const snd = session.current.keySoundsNum[x][y];
-    if (sound[snd].name == undefined) return;
+    const sndd = Object.assign({}, sound[snd]);
+    if (sndd.name == undefined) return;
 
-    if (sound[snd].repeat !== 1) {
-      if (sound[snd].repeat === 0) {
-        return; // not implemented
+    if (sndd.repeat !== 1) {
+      if (sndd.repeat === 0) {
+        sndd.repeat = 1;
+        if (offSoundOnUnpress.current[x] == undefined) {
+          offSoundOnUnpress.current[x] = {};
+        }
+        if (offSoundOnUnpress.current[x][y] == undefined) {
+          offSoundOnUnpress.current[x][y] = [];
+        }
+        offSoundOnUnpress.current[x][y].push({ sound: sounds.current[sndd.name] });
       }
       let cnt = 0;
-      sounds.current[sound[snd].name].on("end", () => {
+      sounds.current[sndd.name].on("end", () => {
         cnt++;
-        if (cnt >= sound[snd].repeat) {
-          sounds.current[sound[snd].name]?.off("end");
+        if (cnt >= sndd.repeat) {
+          sounds.current[sndd.name]?.off("end");
           return;
         }
-        sounds.current[sound[snd].name]?.play();
+        sounds.current[sndd.name]?.play();
       });
     }
-    sounds.current[sound[snd].name]?.play();
+    sounds.current[sndd.name]?.play();
 
     session.current.keySoundsNum[x][y]++;
     if (session.current.keySoundsNum[x][y] >= sound.length) {
@@ -385,7 +409,7 @@ export default function Home() {
       session.current.ledNum[x][y] = 0;
     }
     const ledNum = session.current.ledNum[x][y];
-    const l = led[ledNum];
+    const l = Object.assign({}, led[ledNum]);
     session.current.ledNum[x][y]++;
     if (session.current.ledNum[x][y] >= led.length) {
       session.current.ledNum[x][y] = 0;
@@ -394,9 +418,23 @@ export default function Home() {
     let delayOffset = 0;
     const sess = uuid();
 
+    if (l.repeat === 0) {
+      l.repeat = 1;
+      if (offLEDOnUnpress.current[x] == undefined) {
+        offLEDOnUnpress.current[x] = {};
+      }
+      if (offLEDOnUnpress.current[x][y] == undefined) {
+        offLEDOnUnpress.current[x][y] = [];
+      }
+      offLEDOnUnpress.current[x][y].push({ sess: sess });
+    }
+
     for (let asdf = 0; asdf < l.repeat; asdf++) {
       for (let i = 0; i < l.acts.length; i++) {
-        if (stopled.current) return;
+        if (stopled.current || sess in interruptLEDQueue.current) {
+          interruptLEDQueue.current = interruptLEDQueue.current.filter(value => value !== sess);
+          break;
+        }
         const l2 = l.acts[i];
 
         if (l2.type === "delay" || l2.type === "d") {
@@ -423,6 +461,30 @@ export default function Home() {
     }
     playSnd(x, y);
     playLED(x, y);
+  }
+
+  function unpress(x: number, y: number) {
+    if (offLEDOnUnpress.current[x] && offLEDOnUnpress.current[x][y] && offLEDOnUnpress.current[x][y].length > 0) {
+      for (const asdf of offLEDOnUnpress.current[x][y]) {
+        const sess = asdf.sess;
+        interruptLEDQueue.current.push(sess);
+        for (let i = 0; i < 10; i++) {
+          for (let j = 0; j < 10; j++) {
+            runLED({ type: "off", args: [i + "", j + ""] }, sess);
+          }
+        }
+
+      }
+      offLEDOnUnpress.current[x][y] = [];
+    }
+    if (offSoundOnUnpress.current[x] && offSoundOnUnpress.current[x][y] && offSoundOnUnpress.current[x][y].length > 0) {
+
+      for (const asdf of offSoundOnUnpress.current[x][y]) {
+        const sound = asdf.sound;
+        sound.stop();
+      }
+      offSoundOnUnpress.current[x][y] = [];
+    }
   }
 
   function clearLED() {
@@ -472,6 +534,15 @@ export default function Home() {
   }, [pallete]);
 
   useEffect(() => {
+    setHeight(window.innerHeight);
+    setWidth(window.innerWidth);
+    window.addEventListener("resize", () => {
+      setHeight(window.innerHeight);
+      setWidth(window.innerWidth);
+    });
+    document.addEventListener("fullscreenchange", () => {
+      setIsFullScreen(document.fullscreenElement != null);
+    });
     (async () => {
       const palleteReq = await fetch("/pallete.txt");
       const txt = await palleteReq.text();
@@ -511,87 +582,6 @@ export default function Home() {
   return (<>
     <header className="p-3 pl-10 bg-gray-700 text-white text-3xl flex justify-between items-center">
       <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
-      <div className="flex gap-2 justify-center items-center">
-        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
-          Input
-          <select onChange={a => {
-            if (a.target.value === "none") {
-              midiInput.current = null;
-              return;
-            }
-            if (midiInput.current) {
-              midiInput.current.removeListener("noteon");
-              midiInput.current.removeListener("noteoff");
-            }
-            const mdi = midiInputs.find(key => key.id === a.target.value) ?? null;
-            midiInput.current = mdi;
-            if (mdi) {
-              mdi.addListener("noteon", e => {
-                const noteValue = e.note.number;
-                let row = 0;
-                let col = 0;
-                for (row = 0; row < notes.length; row++) {
-                  col = (notes[row] as number[]).indexOf(noteValue);
-                  if (col !== -1) {
-                    break;
-                  }
-                }
-                col += 1;
-                press(col, row);
-              });
-              mdi.addListener("noteoff", e => {
-                const noteValue = e.note.number;
-                let row = 0;
-                let col = 0;
-                for (row = 0; row < notes.length; row++) {
-                  col = (notes[row] as number[]).indexOf(noteValue);
-                  if (col !== -1) {
-                    break;
-                  }
-                }
-                col += 1;
-              });
-            }
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="none">None</option>
-            {
-              midiInputs ? midiInputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>;
-              }) : undefined
-            }
-          </select>
-        </div>
-        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
-          Output
-          <select onChange={a => {
-            if (a.target.value === "none") {
-              midiOutput.current = null;
-              return;
-            }
-            midiOutput.current = midiOutputs.find(key => key.id === a.target.value) ?? null;
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="none">None</option>
-            {
-              midiOutputs ? midiOutputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>;
-              }) : undefined
-            }
-          </select>
-        </div><div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
-          ModelType
-          <select onChange={a => {
-            modelType.current = a.target.value;
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="pro">Pro</option>
-            <option value="mk2">MK2</option>
-            <option value="promk3">Pro MK3</option>
-            <option value="x">X</option>
-          </select>
-        </div>
-        <button onClick={() => {
-          clearLED();
-        }} className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Clear LED</button>
-      </div>
       <div className="flex gap-2 justify-center items-center">
         <button onClick={async () => {
           session.current = { keySoundsNum: {}, ledNum: {} };
@@ -732,15 +722,100 @@ export default function Home() {
           console.log("Loaded");
           console.log(newsounds);
           console.log(newkeySounds);
-        }} className="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Open</button>
+        }} className="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105 text-lg md:text-2xl">Open</button>
         <button onClick={async () => {
           await document.getElementById("virtualdevice")?.requestFullscreen();
-          await (screen.orientation as unknown as { lock: (orientation: string) => Promise<void> }).lock("landscape");
-        }} className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Fullscreen</button>
+          try {
+            await (screen.orientation as unknown as { lock: (orientation: string) => Promise<void> }).lock("landscape");
+          }
+          catch { }
+        }} className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105 text-lg md:text-2xl">Fullscreen</button>
       </div>
     </header >
     <main className="flex flex-col justify-center items-center mt-5">
-      <div className="text-gray-300 flex gap-5 justify-center items-center">
+      <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
+        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+          Input
+          <select onChange={a => {
+            if (a.target.value === "none") {
+              midiInput.current = null;
+              return;
+            }
+            if (midiInput.current) {
+              midiInput.current.removeListener("noteon");
+              midiInput.current.removeListener("noteoff");
+            }
+            const mdi = midiInputs.find(key => key.id === a.target.value) ?? null;
+            midiInput.current = mdi;
+            if (mdi) {
+              mdi.addListener("noteon", e => {
+                const noteValue = e.note.number;
+                let row = 0;
+                let col = 0;
+                for (row = 0; row < notes.length; row++) {
+                  col = (notes[row] as number[]).indexOf(noteValue);
+                  if (col !== -1) {
+                    break;
+                  }
+                }
+                col += 1;
+                press(col, row);
+              });
+              mdi.addListener("noteoff", e => {
+                const noteValue = e.note.number;
+                let row = 0;
+                let col = 0;
+                for (row = 0; row < notes.length; row++) {
+                  col = (notes[row] as number[]).indexOf(noteValue);
+                  if (col !== -1) {
+                    break;
+                  }
+                }
+                col += 1;
+                unpress(col, row);
+              });
+            }
+          }} className="bg-gray-300 text-black p-2 rounded w-56">
+            <option value="none">None</option>
+            {
+              midiInputs ? midiInputs.map((key, index) => {
+                return <option key={index} value={key.id}>{key.name}</option>;
+              }) : undefined
+            }
+          </select>
+        </div>
+        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+          Output
+          <select onChange={a => {
+            if (a.target.value === "none") {
+              midiOutput.current = null;
+              return;
+            }
+            midiOutput.current = midiOutputs.find(key => key.id === a.target.value) ?? null;
+          }} className="bg-gray-300 text-black p-2 rounded w-56">
+            <option value="none">None</option>
+            {
+              midiOutputs ? midiOutputs.map((key, index) => {
+                return <option key={index} value={key.id}>{key.name}</option>;
+              }) : undefined
+            }
+          </select>
+        </div><div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+          ModelType
+          <select onChange={a => {
+            modelType.current = a.target.value;
+          }} className="bg-gray-300 text-black p-2 rounded w-56">
+            <option value="pro">Pro</option>
+            <option value="mk2">MK2</option>
+            <option value="promk3">Pro MK3</option>
+            <option value="x">X</option>
+          </select>
+        </div>
+        <button onClick={() => {
+          clearLED();
+        }} className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Clear LED</button>
+      </div>
+      <div className="text-gray-300 flex gap-5 justify-center items-center mt-5">
         <div className="flex justify-center items-center">
           <input type="checkbox" className="w-6 h-6" defaultChecked={false} onChange={a => {
             showChain.current = a.target.checked;
@@ -766,7 +841,7 @@ export default function Home() {
           <label className="text-xl font-bold ml-1">Autoplay</label>
         </div>
       </div>
-      <div id="virtualdevice" className="flex justify-center items-center mt-5" style={{ background: "#222222" }}>
+      <div id="virtualdevice" className="flex justify-center items-center mt-5" style={{ background: "#222222", zoom: Math.min(height, width) / (isFullScreen ? 625 : 900) }}>
         <div className="flex justify-center items-center text-gray-30 bg-black p-5 rounded-lg">
           <div className="grid grid-cols-10 gap-2">
             {
@@ -778,19 +853,36 @@ export default function Home() {
                 if (x === 0 && y === 9) return <div key={index} />;
                 if (x === 9 && y === 0) return <div key={index} className="w-12 h-12 flex justify-center items-center"><div className="w-10 h-10 rounded-md" style={{ backgroundColor: `rgb(${state[0]})` }} /></div>;
                 if (x === 9 && y === 9) return <div key={index} />;
+                let clipPath = "";
+                if (x == 4 && y == 4) {
+                  clipPath = "polygon(100% 0, 100% 80%, 80% 100%, 0 100%, 0 0)";
+                }
+                else if (x == 4 && y == 5) {
+                  clipPath = "polygon(80% 0, 100% 20%, 100% 100%, 0 100%, 0 0)"
+                }
+                else if (x == 5 && y == 4) {
+                  clipPath = "polygon(100% 0, 100% 100%, 20% 100%, 0 80%, 0 0)";
+                }
+                else if (x == 5 && y == 5) {
+                  clipPath = "polygon(20% 0, 100% 0, 100% 100%, 0 100%, 0 20%)";
+                }
+
                 return <div key={index} className="w-12 h-12 flex justify-center items-center">
-                  <button onClick={() => {
+                  <button onPointerDown={() => {
                     if (touch) {
                       setTouch(false);
                       return;
                     }
                     press(x, y);
                   }}
-                    onTouchStart={() => {
-                      press(x, y);
-                      setTouch(true);
-                    }} className="w-full h-full text-2xl" style={x === 9 || y === 0 || x === 0 || y === 9 ? { backgroundColor: "#1b1b1b" } : { backgroundColor: `rgb(${state[0]})` }}>
-                    {x === 9 ? <><span className="text-2xl block" style={{ color: `rgb(${state[0]})`, transform: "scaleY(1.5)" }}>&gt;</span>{chain == y ? <span className="absolute block text-2xl text-white opacity-25 ml-20 -mt-8">&lt;</span> : undefined}</> : <span className="text-xs block" style={{ color: `rgb(${state[0]})` }}>Text</span>}
+                  onPointerUp={() => {
+                    if (touch) {
+                      setTouch(false);
+                      return;
+                    }
+                    unpress(x, y);
+                  }} className="w-full h-full text-2xl" style={{ backgroundColor: x === 9 || y === 0 || x === 0 || y === 9 ? "#1b1b1b" : `rgb(${state[0]})`, clipPath: clipPath }}>
+                    {x === 9 ? <><span className="text-2xl block" style={{ color: `rgb(${state[0]})`, transform: "scaleY(1.5)" }}>&gt;</span>{chain == y ? <span className="absolute block text-2xl text-white opacity-25 ml-20 -mt-8">&lt;</span> : undefined}</> : x == 0 || y == 0 || y == 9 ? <span className="text-xs block" style={{ color: `rgb(${state[0]})` }}>Text</span> : undefined}
                   </button>
                 </div>;
               })
