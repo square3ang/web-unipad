@@ -787,7 +787,7 @@ export default function Home() {
           }} defaultSelectedKey="none">
             <SelectOption key="none">None</SelectOption>
             <>{
-              midiInputs ? midiInputs.map((key, index) => {
+              midiInputs ? midiInputs.map((key) => {
                 return <SelectOption key={key.id}>{key.name}</SelectOption>;
               }) : undefined
             }</>
@@ -805,7 +805,7 @@ export default function Home() {
             <SelectOption key="none">None</SelectOption>
             <>
               {midiOutputs && midiOutputs.length > 0
-                ? midiOutputs.map((key, index) => (
+                ? midiOutputs.map((key) => (
                     <SelectOption key={key.id}>{key.name}</SelectOption>
                   ))
                 : null}
