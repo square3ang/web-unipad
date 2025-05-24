@@ -745,7 +745,7 @@ export default function Home() {
       <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
         <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold">
           Input
-          <Select onSelectionChange={a => {
+          <Select aria-label="Input Device Selection" onSelectionChange={a => {
             if (a?.toString() === "none") {
               midiInput.current = null;
               return;
@@ -795,7 +795,7 @@ export default function Home() {
         </div>
         <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold">
           Output
-          <Select onSelectionChange={a => {
+          <Select aria-label="Output Device Selection" onSelectionChange={a => {
             if (a?.toString() === "none") {
               midiOutput.current = null;
               return;
@@ -815,7 +815,7 @@ export default function Home() {
           ModelType
           <Select onSelectionChange={a => {
             modelType.current = a?.toString() ?? "pro";
-          }} defaultSelectedKey="pro">
+          }} aria-label="Model Selection" defaultSelectedKey="pro">
             <SelectOption key="pro">Pro</SelectOption>
             <SelectOption key="mk2">MK2</SelectOption>
             <SelectOption key="promk3">Pro MK3</SelectOption>
@@ -848,7 +848,7 @@ export default function Home() {
       <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold mt-5">
         Speed Multiplier (experimental)
         <div>
-          <TextField type="number" value={speedMultiplier} onChange={a => {
+          <TextField aria-label="Speed Multiplier" type="number" value={speedMultiplier} onChange={a => {
             setSpeedMultiplier(a);
           }} />
         </div>
