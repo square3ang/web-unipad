@@ -31,6 +31,7 @@ body {
   background-color: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
   --lp-button-color: rgb(80, 80, 80);
+  overflow: hidden;
 }
 .bg { 
   background-color: var(--md-sys-color-background);
