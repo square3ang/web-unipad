@@ -30,6 +30,7 @@ body {
   font-family: "Pretendard";
   background-color: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
+  --lp-button-color: rgb(80, 80, 80);
 }
 .bg { 
   background-color: var(--md-sys-color-background);
