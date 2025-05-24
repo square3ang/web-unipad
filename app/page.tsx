@@ -114,10 +114,11 @@ export default function Home() {
       </div>
       <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold mt-5">
         Speed Multiplier (experimental)
-        <div>
+        <div className="flex gap-2 items-center">
           <TextField aria-label="Speed Multiplier" type="number" value={store.speedMultiplier} onChange={a => {
             store.setSpeedMultiplier(a);
           }} />
+          X
         </div>
       </div>
       <VirtualDevice />
