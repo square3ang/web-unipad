@@ -5,7 +5,7 @@ import JSZip from "jszip";
 import { Input, Output, WebMidi } from "webmidi";
 import { Howl } from "howler";
 import { v4 as uuid } from "uuid";
-import { Button, Checkbox, Select, SelectOption, Switch, TextField } from "actify";
+import { Button, Checkbox, Select, SelectOption, TextField } from "actify";
 
 const notes = [
   [Pitch.G6, Pitch.GSharp6, Pitch.A6, Pitch.ASharp6, Pitch.B6, Pitch.C7, Pitch.CSharp7, Pitch.D7, Pitch.DSharp7],
