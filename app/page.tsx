@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { Input, Output, WebMidi } from "webmidi";
 import { Howl } from "howler";
 import { v4 as uuid } from "uuid";
+import { Button, Checkbox, Select, SelectOption, Switch, TextField } from "actify";
 
 const notes = [
   [Pitch.G6, Pitch.GSharp6, Pitch.A6, Pitch.ASharp6, Pitch.B6, Pitch.C7, Pitch.CSharp7, Pitch.D7, Pitch.DSharp7],
@@ -133,7 +134,7 @@ export default function Home() {
 
   const interruptLEDQueue = useRef<string[]>([]);
 
-  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  const [speedMultiplier, setSpeedMultiplier] = useState("1");
 
   const speedMultiplierRef = useRef(1);
 
@@ -216,7 +217,7 @@ export default function Home() {
   }, [chain]);
 
   useEffect(() => {
-    speedMultiplierRef.current = speedMultiplier;
+    speedMultiplierRef.current = Number(speedMultiplier);
   }, [speedMultiplier]);
 
 
@@ -588,10 +589,10 @@ export default function Home() {
   }, []);
 
   return (<>
-    <header className="p-3 pl-10 bg-gray-700 text-white text-3xl flex justify-between items-center">
-      <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-cyan-500">Web Unipad</span>
+    <header className="bg2 p-3 pl-10 text-white text-3xl flex justify-between items-center">
+      <span className="font-bold">Web Unipad</span>
       <div className="flex gap-2 justify-center items-center">
-        <button onClick={async () => {
+        <Button onClick={async () => {
           session.current = { keySoundsNum: {}, ledNum: {} };
           LEDEnabled.current = {};
           setChain(1);
@@ -730,22 +731,22 @@ export default function Home() {
           console.log("Loaded");
           console.log(newsounds);
           console.log(newkeySounds);
-        }} className="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105 text-lg md:text-2xl">Open</button>
-        <button onClick={async () => {
+        }} variant="tonal">Open</Button>
+        <Button onClick={async () => {
           await document.getElementById("virtualdevice")?.requestFullscreen();
           try {
             await (screen.orientation as unknown as { lock: (orientation: string) => Promise<void> }).lock("landscape");
           }
           catch { }
-        }} className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105 text-lg md:text-2xl">Fullscreen</button>
+        }} variant="tonal">Fullscreen</Button>
       </div>
     </header >
     <main className="flex flex-col justify-center items-center mt-5">
       <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
-        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+        <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold">
           Input
-          <select onChange={a => {
-            if (a.target.value === "none") {
+          <Select onSelectionChange={a => {
+            if (a?.toString() === "none") {
               midiInput.current = null;
               return;
             }
@@ -753,7 +754,7 @@ export default function Home() {
               midiInput.current.removeListener("noteon");
               midiInput.current.removeListener("noteoff");
             }
-            const mdi = midiInputs.find(key => key.id === a.target.value) ?? null;
+            const mdi = midiInputs.find(key => key.id === a?.toString()) ?? null;
             midiInput.current = mdi;
             if (mdi) {
               mdi.addListener("noteon", e => {
@@ -783,81 +784,76 @@ export default function Home() {
                 unpress(col, row);
               });
             }
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="none">None</option>
-            {
+          }} defaultSelectedKey="none">
+            <SelectOption key="none">None</SelectOption>
+            <>{
               midiInputs ? midiInputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>;
+                return <SelectOption key={key.id}>{key.name}</SelectOption>;
               }) : undefined
-            }
-          </select>
+            }</>
+          </Select>
         </div>
-        <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+        <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold">
           Output
-          <select onChange={a => {
-            if (a.target.value === "none") {
+          <Select onSelectionChange={a => {
+            if (a?.toString() === "none") {
               midiOutput.current = null;
               return;
             }
-            midiOutput.current = midiOutputs.find(key => key.id === a.target.value) ?? null;
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="none">None</option>
-            {
-              midiOutputs ? midiOutputs.map((key, index) => {
-                return <option key={index} value={key.id}>{key.name}</option>;
-              }) : undefined
-            }
-          </select>
-        </div><div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold">
+            midiOutput.current = midiOutputs.find(key => key.id === a?.toString()) ?? null;
+          }} defaultSelectedKey="none">
+            <SelectOption key="none">None</SelectOption>
+            <>
+              {midiOutputs && midiOutputs.length > 0
+                ? midiOutputs.map((key, index) => (
+                    <SelectOption key={key.id}>{key.name}</SelectOption>
+                  ))
+                : null}
+            </>
+          </Select>
+        </div><div className="flex flex-col gap-2 justify-center items-center text-xl font-bold">
           ModelType
-          <select onChange={a => {
-            modelType.current = a.target.value;
-          }} className="bg-gray-300 text-black p-2 rounded w-56">
-            <option value="pro">Pro</option>
-            <option value="mk2">MK2</option>
-            <option value="promk3">Pro MK3</option>
-            <option value="x">X</option>
-          </select>
+          <Select onSelectionChange={a => {
+            modelType.current = a?.toString() ?? "pro";
+          }} defaultSelectedKey="pro">
+            <SelectOption key="pro">Pro</SelectOption>
+            <SelectOption key="mk2">MK2</SelectOption>
+            <SelectOption key="promk3">Pro MK3</SelectOption>
+            <SelectOption key="x">X</SelectOption>
+          </Select>
         </div>
-        <button onClick={() => {
+        <Button onClick={() => {
           clearLED();
-        }} className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-xl transition duration-100 hover:scale-105">Clear LED</button>
+        }} className="h-14 mt-10" variant="filled">Clear LED</Button>
       </div>
-      <div className="text-gray-300 flex gap-5 justify-center items-center mt-5">
-        <div className="flex justify-center items-center">
-          <input type="checkbox" className="w-6 h-6" defaultChecked={false} onChange={a => {
-            showChain.current = a.target.checked;
-            if (a.target.checked) {
+      <div className="flex gap-5 justify-center items-center mt-5">
+          <Checkbox onChange={a => {
+            showChain.current = a;
+            if (a) {
               updateChainLED();
             }
             else {
               updateChainLED(true);
             }
-          }} />
-          <label className="text-xl font-bold ml-1">Show Chain</label>
-        </div>
-
-        <div className="flex justify-center items-center">
-          <input type="checkbox" className="w-6 h-6" defaultChecked={false} onChange={a => {
-            autoPlaying.current = a.target.checked;
+          }}>Show Chain</Checkbox>
+          <Checkbox onChange={a => {
+            autoPlaying.current = a;
             clearLED();
             press(9, 1);
-            if (a.target.checked) {
+            if (a) {
               playAuto();
             }
-          }} />
-          <label className="text-xl font-bold ml-1">Autoplay</label>
-        </div>
+          }}>Autoplay</Checkbox>
       </div>
-      <div className="flex flex-col gap-2 justify-center items-center text-xl text-gray-300 font-bold mt-5">
+      <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold mt-5">
         Speed Multiplier (experimental)
         <div>
-          <input type="number" value={speedMultiplier} onChange={a => {
-            setSpeedMultiplier(Number(a.target.value));
-          }} className="bg-gray-300 p-2 rounded-lg font-bold w-24 text-black"></input> x
+          <TextField type="number" value={speedMultiplier} onChange={a => {
+            setSpeedMultiplier(a);
+          }} />
         </div>
       </div>
-      <div id="virtualdevice" className="flex justify-center items-center mt-5" style={{ background: "#222222", zoom: Math.min(height, width) / (isFullScreen ? 625 : 900) }}>
+      <div id="virtualdevice" className="flex justify-center items-center mt-5 bg" style={{zoom: Math.min(height, width) / (isFullScreen ? 625 : 900) }}>
         <div className="flex justify-center items-center text-gray-30 bg-black p-5 rounded-lg">
           <div className="grid grid-cols-10 gap-2">
             {

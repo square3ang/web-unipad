@@ -1,0 +1,8 @@
+{
+  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css": { "integrity": "sha512-QwIqEcCehqRdzS8PXVdHrUvgVgHLyIEW4S7+RAVuHUz8Kuf11RoZAKs+5h38jGfEw+QL0zOddDuOjkZ3HeUB8w==", "contentType": "text/css; charset=utf-8" },
+  "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined": { "integrity": "sha512-42rB5H/i5CRy3r1GRfm0nRFl5TYsukJSUp2ynTAbT59wFnlUnUBI3/a+u95PHuU2p2oz+SftZdvvVVR6CwYd4w==", "contentType": "text/css; charset=utf-8" },
+  "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&.css": { "integrity": "sha512-42rB5H/i5CRy3r1GRfm0nRFl5TYsukJSUp2ynTAbT59wFnlUnUBI3/a+u95PHuU2p2oz+SftZdvvVVR6CwYd4w==", "contentType": "text/css; charset=utf-8" },
+  "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&asdf.css": { "integrity": "sha512-42rB5H/i5CRy3r1GRfm0nRFl5TYsukJSUp2ynTAbT59wFnlUnUBI3/a+u95PHuU2p2oz+SftZdvvVVR6CwYd4w==", "contentType": "text/css; charset=utf-8" },
+  "https://fonts.gstatic.com/s/materialsymbolsoutlined/v245/kJF1BvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oDMzByHX9rA6RzaxHMPdY43zj-jCxv3fzvRNU22ZXGJpEpjC_1v-p_4MrImHCIJIZrDCvHOej.woff2": { "integrity": "sha512-Rp1hjdhIvMswNxTAwKPuGqa6ZyJSqCeQGXRP56HvvBwSxZNlWJd3XPW3hVaLFsMQCSjQCfgi06xUwKaas8PUXw==", "contentType": "font/woff2" },
+  "version": 1
+}

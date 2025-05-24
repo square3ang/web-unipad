@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "actify": "^0.5.5",
     "howler": "^2.2.4",
     "jszip": "^3.10.1",
     "next": "15.3.1",
