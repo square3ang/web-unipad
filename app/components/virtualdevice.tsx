@@ -100,7 +100,7 @@ export default function VirtualDevice() {
 
   const LEDEnabled = useRef<{ [x: number]: { [y: number]: string } }>({});
 
-  const modelType = useRef<string>("pro");
+  const modelType = useRef<string>("");
 
   const stopled = useRef<boolean>(false);
 
@@ -760,7 +760,7 @@ export default function VirtualDevice() {
 
   // speedMultiplier 상태를 ref로 동기화
   useEffect(() => {
-    speedMultiplierRef.current = Number(store.speedMultiplier);
+    speedMultiplierRef.current = store.speedMultiplier;
   }, [store.speedMultiplier]);
 
   // modelType 상태를 ref로 동기화

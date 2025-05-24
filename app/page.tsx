@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input, Output, WebMidi } from "webmidi";
 import { Button, Checkbox, Select, SelectOption, TextField } from "actify";
 import useStore from "@/store/zustand";
@@ -12,6 +12,7 @@ export default function Home() {
   const store = useStore();
   const [midiInputs, setMidiInputs] = useState<Input[]>([]);
   const [midiOutputs, setMidiOutputs] = useState<Output[]>([]);
+  const multiplierFieldRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -19,7 +20,10 @@ export default function Home() {
       setMidiInputs(WebMidi.inputs);
       setMidiOutputs(WebMidi.outputs);
     })();
+    multiplierFieldRef.current!.step = "0.1";
+    multiplierFieldRef.current!.min = "0.1";
   }, []);
+
 
   return (<>
     <header className="bg2 p-3 pl-10 text-white text-3xl flex justify-between items-center">
@@ -54,7 +58,7 @@ export default function Home() {
             const mdi = midiInputs.find(key => key.id === a?.toString()) ?? null;
             store.setMidiInput(mdi);
             inputChanged(mdi);
-            
+
           }} defaultSelectedKey="none">
             <SelectOption key="none">None</SelectOption>
             <>{
@@ -114,11 +118,12 @@ export default function Home() {
       </div>
       <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold mt-5">
         Speed Multiplier (experimental)
-        <div className="flex gap-2 items-center">
-          <TextField aria-label="Speed Multiplier" type="number" value={store.speedMultiplier} onChange={a => {
-            store.setSpeedMultiplier(a);
-          }} />
-          X
+        <div>
+          <TextField aria-label="Speed Multiplier" type="number" ref={multiplierFieldRef} value={store.speedMultiplier.toString()} onChange={a => {
+            store.setSpeedMultiplier(Number(a));
+          }} trailingIcon={
+            <span>x</span>
+          } />
         </div>
       </div>
       <VirtualDevice />
