@@ -42,7 +42,7 @@ export default function Home() {
       </div>
     </header >
     <main className="flex flex-col justify-center items-center mt-5">
-      <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
+      <div className="flex flex-row gap-2 justify-center items-center">
         <div className="flex flex-col gap-2 justify-center items-center text-xl font-bold">
           Input
           <Select aria-label="Input Device Selection" onSelectionChange={a => {
