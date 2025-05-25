@@ -34,15 +34,15 @@ export default function Home() {
     <header className="bg2 p-3 pl-10 text-white text-3xl flex justify-between items-center">
       <span className="font-bold">Web Unipad</span>
       <div className="flex gap-2 justify-center items-center">
-        <IconButton onPress={state.open} aria-label="Settings" variant="filled"><Icon>settings</Icon></IconButton>
-        <IconButton onPress={load} aria-label="Open" variant="filled"><Icon>file_open</Icon></IconButton>
+        <IconButton onPress={state.open} aria-label="Settings"><Icon>settings</Icon></IconButton>
+        <IconButton onPress={load} aria-label="Open"><Icon>file_open</Icon></IconButton>
         <IconButton onPress={async () => {
           await document.getElementById("virtualdevice")?.requestFullscreen();
           try {
             await (screen.orientation as unknown as { lock: (orientation: string) => Promise<void> }).lock("landscape");
           }
           catch { }
-        }} aria-label="Fullscreen" variant="filled"><Icon>fullscreen</Icon></IconButton>
+        }} aria-label="Fullscreen"><Icon>fullscreen</Icon></IconButton>
       </div>
     </header >
     <main className="flex flex-col justify-center items-center mt-5">
