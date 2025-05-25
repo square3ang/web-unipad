@@ -766,7 +766,7 @@ export default function VirtualDevice() {
   }, [store.midiOutput]);
 
   return (
-    <div id="virtualdevice" className="flex justify-center items-center mt-5 bg" style={{ zoom: Math.min(height, width) / (isFullScreen ? 625 : 1100) }}>
+    <div id="virtualdevice" className="flex justify-center items-center mt-5 bg" style={{ zoom: Math.min(height, width) / (isFullScreen ? 625 : 700) }}>
       <div className="flex justify-center items-center text-gray-30 bg-black p-5 rounded-lg">
         <div className="grid grid-cols-10 gap-2">
           {
