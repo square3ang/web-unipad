@@ -23,7 +23,6 @@
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
-
 :root,:host{--md-sys-color-background:#1c110a;--md-sys-color-on-background:#f5ded2;--md-sys-color-surface:#1c110a;--md-sys-color-surface-dim:#1c110a;--md-sys-color-surface-bright:#44362e;--md-sys-color-surface-container-lowest:#160c06;--md-sys-color-surface-container-low:#251912;--md-sys-color-surface-container:#291d15;--md-sys-color-surface-container-high:#34271f;--md-sys-color-surface-container-highest:#40322a;--md-sys-color-on-surface:#f5ded2;--md-sys-color-surface-variant:#574235;--md-sys-color-on-surface-variant:#dfc1af;--md-sys-color-inverse-surface:#f5ded2;--md-sys-color-inverse-on-surface:#3b2e25;--md-sys-color-outline:#a68b7b;--md-sys-color-outline-variant:#574235;--md-sys-color-shadow:#000000;--md-sys-color-scrim:#000000;--md-sys-color-surface-tint:#ffb787;--md-sys-color-primary:#ffb787;--md-sys-color-on-primary:#502400;--md-sys-color-primary-container:#ff8000;--md-sys-color-on-primary-container:#5e2b00;--md-sys-color-inverse-primary:#964900;--md-sys-color-secondary:#ffb787;--md-sys-color-on-secondary:#502400;--md-sys-color-secondary-container:#6f380c;--md-sys-color-on-secondary-container:#f1a36f;--md-sys-color-tertiary:#cbcd34;--md-sys-color-on-tertiary:#323200;--md-sys-color-tertiary-container:#a7a900;--md-sys-color-on-tertiary-container:#3b3c00;--md-sys-color-error:#ffb4ab;--md-sys-color-on-error:#690005;--md-sys-color-error-container:#93000a;--md-sys-color-on-error-container:#ffdad6;}
 
 body {
