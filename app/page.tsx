@@ -107,12 +107,12 @@ export default function Home() {
               clearLED();
             }} className="h-14 mt-10" variant="filled">Clear LED</Button>
             <div className="flex gap-5 justify-center items-center mt-5">
-              <Checkbox onChange={async a => {
+              <Checkbox isSelected={store.showChain} onChange={async a => {
                 store.setShowChain(a);
                 await new Promise(resolve => setTimeout(resolve, 100));
                 updateChainLED(!a);
               }}>Show Chain</Checkbox>
-              <Checkbox onChange={a => {
+              <Checkbox isSelected={store.autoPlaying}  onChange={a => {
                 store.setAutoPlaying(a);
                 clearLED();
                 press(9, 1);

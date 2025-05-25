@@ -351,7 +351,7 @@ export default function VirtualDevice() {
 
 
     async function playAuto() {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       let delayOffset = 0;
       for (const l of autoPlay.current.split(/\r\n|\r|\n/)) {
         if (!autoPlayingRef.current) {
