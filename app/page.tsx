@@ -65,7 +65,7 @@ export default function Home() {
                 store.setMidiInput(mdi);
                 inputChanged(mdi);
 
-              }} defaultSelectedKey="none">
+              }} selectedKey={store.midiInput?.id ?? "none"}>
                 <SelectOption key="none">None</SelectOption>
                 <>{
                   midiInputs ? midiInputs.map((key) => {
@@ -82,7 +82,7 @@ export default function Home() {
                   return;
                 }
                 store.setMidiOutput(midiOutputs.find(key => key.id === a?.toString()) ?? null);
-              }} defaultSelectedKey="none">
+              }} selectedKey={store.midiOutput?.id ?? "none"}>
                 <SelectOption key="none">None</SelectOption>
                 <>
                   {midiOutputs && midiOutputs.length > 0
@@ -96,7 +96,7 @@ export default function Home() {
               ModelType
               <Select onSelectionChange={a => {
                 store.setModelType(a?.toString() ?? "pro");
-              }} aria-label="Model Selection" defaultSelectedKey="pro">
+              }} aria-label="Model Selection" selectedKey={store.modelType ?? "pro"}>
                 <SelectOption key="pro">Pro</SelectOption>
                 <SelectOption key="mk2">MK2</SelectOption>
                 <SelectOption key="promk3">Pro MK3</SelectOption>
