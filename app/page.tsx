@@ -28,7 +28,7 @@ export default function Home() {
     if (!multiplierFieldRef.current) return;
     multiplierFieldRef.current.step = "0.1";
     multiplierFieldRef.current.min = "0.1";
-  }, [multiplierFieldRef]);
+  }, [state]);
 
   return (<>
     <header className="bg2 p-3 pl-10 text-white text-3xl flex justify-between items-center">
