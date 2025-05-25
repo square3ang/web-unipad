@@ -775,7 +775,7 @@ export default function VirtualDevice() {
               const x = index % 10;
               if (x === 0 && y === 0) return <div key={index} id={`lp-button-${index}`} />;
               if (x === 0 && y === 9) return <div key={index} id={`lp-button-${index}`} />;
-              if (x === 9 && y === 0) return <div key={index} id={`lp-button-${index}`} className="w-12 h-12 flex justify-center items-center"><div className="w-10 h-10 rounded-md" style={{ backgroundColor: `rgb(${key})` }} /></div>;
+              if (x === 9 && y === 0) return <div key={index} id={`lp-button-${index}`} className="w-12 h-12 flex justify-center items-center"><div className="w-10 h-10 rounded-md" style={{ backgroundColor: `var(--lp-button-color)` }} /></div>;
               if (x === 9 && y === 9) return <div key={index} id={`lp-button-${index}`} />;
               let clipPath = "";
               if (x == 4 && y == 4) {
